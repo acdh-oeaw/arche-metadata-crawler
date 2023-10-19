@@ -1,0 +1,35 @@
+{
+    "name": "acdh-oeaw/arche-metadata-crawler",
+    "description": "Script and library for checking and generating ARCHE metadata in ACDH schema",
+    "keywords": [],
+    "homepage": "https://github.com/acdh-oeaw/arche-metadata-crawler",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Mateusz Żółtak",
+            "email": "mzoltak@oeaw.ac.at"
+        }
+    ],
+    "require": {
+        "php": ">=8.1 <8.2",
+        "zozlak/argparse": "^1",
+        "acdh-oeaw/arche-assets": "^3.9.4",
+        "acdh-oeaw/arche-lib-schema": "dev-master",
+        "acdh-oeaw/arche-lib": "dev-rdfInterface",
+        "phpoffice/phpspreadsheet": "^1.29",
+        "sweetrdf/quick-rdf": "dev-master",
+        "sweetrdf/rdf-interface": "^2.0.0-RC6",
+        "sweetrdf/quick-rdf-io": "dev-master",
+        "zozlak/logging": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "acdhOeaw\\": "src/acdhOeaw"
+        }
+    },
+    "bin": [
+    ],
+    "require-dev": {
+        "phpstan/phpstan": "*"
+    }
+}
