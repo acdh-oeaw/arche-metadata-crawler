@@ -26,6 +26,7 @@
 
 namespace acdhOeaw\arche\metadataCrawler;
 
+use Psr\Log\LoggerInterface;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -61,10 +62,7 @@ class TemplateCreator {
         'https://vocabs.acdh.oeaw.ac.at/schema#Place',
     ];
     private const AGENT_CLASS       = 'https://vocabs.acdh.oeaw.ac.at/schema#Agent';
-
-    private Ontology $ontology;
-    private string $repoBaseUrl;
-    private array $styles = [
+    private const STYLES            = [
         'title'   => [
             'font'      => [
                 'name' => 'Calibri',
@@ -142,9 +140,15 @@ class TemplateCreator {
         ]
     ];
 
-    public function __construct(Ontology $ontology, string $repoBaseUrl) {
+    private Ontology $ontology;
+    private string $repoBaseUrl;
+    private LoggerInterface | null $log = null;
+
+    public function __construct(Ontology $ontology, string $repoBaseUrl,
+                                ?LoggerInterface $log = null) {
         $this->ontology    = $ontology;
         $this->repoBaseUrl = $repoBaseUrl;
+        $this->log = $log;
     }
 
     /**
@@ -203,7 +207,7 @@ class TemplateCreator {
         // sheets for classes
         $orderFn = fn(PropertyDesc $x) => -999999 * in_array($labelProp, $x->property) - 888888 * in_array($idProp, $x->property) - 777777 * ($x->min > 0) - 666666 * $x->recommendedClass + $x->ordering;
         foreach ($classes as $class) {
-            echo "$class\n";
+            $this->log?->info($class);
             $classDesc  = $this->ontology->getClass($class);
             $properties = $classDesc->getProperties();
             $properties = array_filter($properties, fn(PropertyDesc $x) => !$x->automatedFill && 0 === count(array_intersect($x->property, self::SKIP_PROPERTIES)));
@@ -304,7 +308,7 @@ class TemplateCreator {
     private function setValidation(Worksheet $sheet, string $type,
                                    string $range, string $formula1,
                                    string $formula2, bool $allowBlank): void {
-        echo "setting validation of $range to $type: $formula1\n";
+        $this->log?->info("setting validation of $range to $type: $formula1");
         $firstCell  = explode(':', $range)[0];
         $validation = $sheet->getCell($firstCell)->getDataValidation();
         $validation->setType($type);
@@ -332,7 +336,7 @@ class TemplateCreator {
         $protection->setSort(true);
         $protection->setDeleteColumns(true);
         $protection->setDeleteRows(true);
-        $protection->setFormatCells(true);
+        $protection->setFormatCells(false);
         $protection->setInsertColumns(true);
         $protection->setInsertHyperlinks(true);
         $protection->setInsertRows(true);
@@ -402,7 +406,7 @@ class TemplateCreator {
 
     private function getStyle(string $name, ?bool $bold = null,
                               ?bool $border = null, ?string $align = null): array {
-        $style = $this->styles[$name];
+        $style = self::STYLES[$name];
         if ($bold !== null) {
             $style['font']['bold'] = $bold;
         }
