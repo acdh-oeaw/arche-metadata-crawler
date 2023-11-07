@@ -47,22 +47,23 @@ use zozlak\RdfConstants as RDF;
  */
 class TemplateCreator {
 
-    public const LOCK_PSWD         = 'ARCHE';
-    private const FIRST_ROW_ID_ONLY = 8;
-    private const FIRST_ROW_OTHER   = 7;
-    private const VOCABULARY_SHEET  = 'Vocabularies';
-    private const ENTRY_ROWS        = 200;
-    private const SKIP_PROPERTIES   = [
+    public const LOCK_PSWD             = 'ARCHE';
+    private const HORIZONTAL_ROW_HEIGHT = 2;
+    private const FIRST_ROW_ID_ONLY     = 8;
+    private const FIRST_ROW_OTHER       = 7;
+    private const VOCABULARY_SHEET      = 'Vocabularies';
+    private const ENTRY_ROWS            = 200;
+    private const SKIP_PROPERTIES       = [
         'https://vocabs.acdh.oeaw.ac.at/schema#hasPid'
     ];
-    private const URL_FORMULA       = '=LEFT(%cell%, 4)="http"';
-    private const ID_ONLY_CLASSES   = [
+    private const URL_FORMULA           = '=LEFT(%cell%, 4)="http"';
+    private const ID_ONLY_CLASSES       = [
         'https://vocabs.acdh.oeaw.ac.at/schema#Person',
         'https://vocabs.acdh.oeaw.ac.at/schema#Organisation',
         'https://vocabs.acdh.oeaw.ac.at/schema#Place',
     ];
-    private const AGENT_CLASS       = 'https://vocabs.acdh.oeaw.ac.at/schema#Agent';
-    private const STYLES            = [
+    private const AGENT_CLASS           = 'https://vocabs.acdh.oeaw.ac.at/schema#Agent';
+    private const STYLES                = [
         'title'   => [
             'font'      => [
                 'name' => 'Calibri',
@@ -141,40 +142,121 @@ class TemplateCreator {
     ];
 
     private Ontology $ontology;
+    private Schema $schema;
     private string $repoBaseUrl;
     private LoggerInterface | null $log = null;
 
-    public function __construct(Ontology $ontology, string $repoBaseUrl,
+    public function __construct(Ontology $ontology, Schema $schema,
+                                string $repoBaseUrl,
                                 ?LoggerInterface $log = null) {
         $this->ontology    = $ontology;
+        $this->schema      = $schema;
         $this->repoBaseUrl = $repoBaseUrl;
-        $this->log = $log;
+        $this->log         = $log;
+    }
+
+    public function createHorizontalTemplate(string $path, string $class,
+                                             string $guidelines): void {
+        $classDesc = $this->ontology->getClass($class);
+        if ($classDesc === null) {
+            throw new MetadataCrawlerException("Unknown class $class");
+        }
+        $idProp      = (string) $this->schema->id;
+        $labelProp   = (string) $this->schema->label;
+        $spreadsheet = new Spreadsheet();
+
+        $this->addGuidelines($spreadsheet->getActiveSheet(), $guidelines);
+
+        $properties = $classDesc->getProperties();
+        $properties = array_filter($properties, fn(PropertyDesc $x) => !$x->automatedFill && 0 === count(array_intersect($x->property, self::SKIP_PROPERTIES)));
+        $orderFn    = fn(PropertyDesc $x) => -999999 * in_array($labelProp, $x->property) - 888888 * in_array($idProp, $x->property) - 777777 * ($x->min > 0) - 666666 * $x->recommendedClass + $x->ordering;
+        usort($properties, fn(PropertyDesc $a, PropertyDesc $b) => $orderFn($a) <=> $orderFn($b));
+        $properties = array_values($properties);
+
+        $shortName = $this->shortenUri($class);
+        $sheet     = new Worksheet(null, $shortName);
+        $spreadsheet->addSheet($sheet, 0);
+        $this->protectSheet($sheet);
+
+        $titleStyle = $this->getStyle('title');
+        $sheet->setCellValue('A1', "Properties for $shortName (" . date('d.m.Y', time()) . ')');
+        $sheet->mergeCells('A1:G1');
+        $sheet->getStyle('A1:G1')->applyFromArray($titleStyle);
+        $sheet->getRowDimension(1)->setRowHeight($titleStyle['font']['size'] * 1.8, 'pt');
+        $sheet->setCellValue('A2', 'Please see the guidelines in the "Guidelines" sheet');
+        $sheet->mergeCells('A2:G2');
+        $sheet->getStyle('A2:G2')->applyFromArray($titleStyle);
+        $sheet->getRowDimension(2)->setRowHeight($titleStyle['font']['size'] * 1.8, 'pt');
+
+        $header = [
+            'A' => ['Property', 4.5],
+            'B' => ['Ordinality', 3],
+            'C' => ['Description', 6],
+            'D' => ['Vocabulary', 4],
+            'E' => ['Value 1', 6],
+            'F' => ['Value 2', 6],
+            'G' => ['Value 3', 6],
+        ];
+        foreach ($header as $col => $def) {
+            $sheet->setCellValue($col . '4', $def[0]);
+            $sheet->getStyle($col . '4')->applyFromArray($this->getStyle('title', true, true));
+            $sheet->getColumnDimension($col)->setWidth($def[1], 'cm');
+        }
+        $sheet->getRowDimension(4)->setRowHeight($titleStyle['font']['size'] * 1.8, 'pt');
+
+        $styleContent = $this->getStyle('content', false, true);
+        for ($i = 0, $row = 5; $i < count($properties); $i++, $row++) {
+            /* @var $prop PropertyDesc */
+            $prop  = $properties[$i];
+            $style = $prop->min > 0 ? 'header1' : ($prop->recommendedClass ? 'header2' : 'header3');
+
+            $sheet->setCellValue("A$row", $this->shortenUri($prop->uri));
+            $sheet->getStyle("A$row")->applyFromArray($this->getStyle($style, $i < 2, true));
+
+            $sheet->setCellValue("B$row", $this->getCardinality($prop));
+            $sheet->getStyle("B$row")->applyFromArray($this->getStyle($style, false, true));
+
+            $sheet->setCellValue("C$row", $prop->comment['en'] ?? reset($prop->comment));
+            $sheet->getStyle("C$row")->applyFromArray($this->getStyle($style, false, true, 'left'));
+
+            if (!empty($prop->vocabs)) {
+                $sheet->setCellValue("D$row", $prop->vocabs);
+            }
+            $sheet->getStyle("D$row")->applyFromArray($this->getStyle($style, false, true, 'left'));
+
+            $styleNa = $this->getStyle($style, false, true);
+            if ($prop->max === 1) {
+                $sheet->setCellValue("F$row", 'Not Applicable');
+                $sheet->setCellValue("G$row", 'Not Applicable');
+                $sheet->getStyle("E$row")->applyFromArray($styleContent);
+                $sheet->getStyle("F$row:G$row")->applyFromArray($styleNa);
+                $unprotectRange = "E$row";
+            } else {
+                $sheet->getStyle("E$row:G$row")->applyFromArray($styleContent);
+                $unprotectRange = "E$row:N$row";
+            }
+            $sheet->getStyle($unprotectRange)
+                ->getProtection()
+                ->setLocked(\PhpOffice\PhpSpreadsheet\Style\Protection::PROTECTION_UNPROTECTED);
+
+            $sheet->getRowDimension($row)->setRowHeight(self::HORIZONTAL_ROW_HEIGHT, 'cm');
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($path);
     }
 
     /**
      * 
-     * @param string $path
      * @param array<string> $classes
      */
-    public function createTemplate(string $path, array $classes, Schema $schema,
-                                   string $guidelines): void {
-        $idProp      = (string) $schema->id;
-        $labelProp   = (string) $schema->label;
+    public function createNamedEntitiesTemplate(string $path, array $classes,
+                                                string $guidelines): void {
+        $idProp      = (string) $this->schema->id;
+        $labelProp   = (string) $this->schema->label;
         $spreadsheet = new Spreadsheet();
 
-        $sheet      = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Guidelines');
-        $sheet->setCellValue('A1', 'Guidelines');
-        $guidelines = explode("\n", $guidelines);
-        for ($i = 0;
-            $i < count($guidelines);
-            $i++) {
-            $sheet->setCellValue('A' . ($i + 2), $guidelines[$i]);
-        }
-        $sheet->getStyle('A1:A' . ($i + 1))->applyFromArray($this->getStyle('content'));
-        $sheet->getStyle('A1')->applyFromArray($this->getStyle('title'));
-        $sheet->getColumnDimension('A')->setAutoSize(true);
-        $sheet->refreshColumnDimensions();
+        $this->addGuidelines($spreadsheet->getActiveSheet(), $guidelines);
 
         $vocabularySheet = new Worksheet(null, self::VOCABULARY_SHEET);
         $spreadsheet->addSheet($vocabularySheet);
@@ -247,7 +329,7 @@ class TemplateCreator {
                 $col   = CellAddress::fromColumnAndRow($i + 1, $firstRow)->columnName();
 
                 $addr = $col . ($firstRow - 3);
-                $sheet->setCellValue($addr, $prop->min > 0 ? 'required' : ($prop->recommendedClass ? 'recommended' : 'optional'));
+                $sheet->setCellValue($addr, $this->getCardinality($prop));
                 $sheet->getStyle($addr)->applyFromArray($this->getStyle($style, false, true));
 
                 $addr = $col . ($firstRow - 2);
@@ -443,6 +525,29 @@ class TemplateCreator {
             }
         }
         return true;
+    }
+
+    private function addGuidelines(Worksheet $sheet, string $guidelines): void {
+        $sheet->setTitle('Guidelines');
+        $sheet->setCellValue('A1', 'Guidelines');
+        $guidelines = explode("\n", $guidelines);
+        for ($i = 0;
+            $i < count($guidelines);
+            $i++) {
+            $sheet->setCellValue('A' . ($i + 2), $guidelines[$i]);
+        }
+        $sheet->getStyle('A1:A' . ($i + 1))->applyFromArray($this->getStyle('content'));
+        $sheet->getStyle('A1')->applyFromArray($this->getStyle('title'));
+        $sheet->getColumnDimension('A')->setAutoSize(true);
+        $sheet->refreshColumnDimensions();
+    }
+
+    private function getCardinality(PropertyDesc $prop): string {
+        $cardinality = $prop->min > 0 ? 'required' : ($prop->recommendedClass ? 'recommended' : 'optional');
+        if (!($prop->max === 1)) {
+            $cardinality .= '*';
+        }
+        return $cardinality;
     }
 
     private function shortenUri(string $uri): string {
