@@ -13,6 +13,7 @@
 * Install PHP 8 and [composer](https://getcomposer.org/)
 * Run:
   ```bash
+  echo '{"minimum-stability": "dev"}' > composer.json
   composer require acdh-oeaw/arche-metadata-crawler:dev-master
   ```
 
@@ -24,7 +25,7 @@
 
 ## Locally
 
-* Generating and validaint the metadata:
+* Generating and validaing the metadata:
   ```bash
   vendor/bin/arche-crawl-meta \
     --filecheckerOutput <pathTo_fileList.json_generatedBy_repo-filechecker> \
@@ -33,13 +34,17 @@
   ```
   e.g.
   ```bash
-  vendor/bin/arche-crawl-meta --filecheckerOutput fileList.json myCollectionDir metadata.ttl
+  vendor/bin/arche-crawl-meta \
+    --filecheckerOutput fileList.json \
+    myCollectionDir metadata.ttl
   ```
 * Creating metadata templates:
   ```bash
-  vendor/bin/arche-create-metadata-template <pathToDirectoryWhereTemplateShouldBeCreated> all
+  vendor/bin/arche-create-metadata-template \
+    <pathToDirectoryWhereTemplateShouldBeCreated> \
+    all
   ```
-  e.g. to create templates in current directory
+  e.g. to create templates in the current directory
   ```bash
   bin/arche-create-metadata-template . all
   ```
@@ -54,7 +59,29 @@ Remarks:
 
 ## On repo-ingestion@hephaistos
 
-Will come later
+* Generating and validaing the metadata:
+  ```bash
+  /ARCHE/vendor/metacrawler/vendor/bin/arche-crawl-meta \
+    --filecheckerOutput <pathTo_fileList.json_generatedBy_repo-filechecker> \
+    <pathToCollectionData> \
+    <pathToTargetMetadataFile>
+  ```
+  e.g.
+  ```bash
+  /ARCHE/vendor/metacrawler/vendor/bin/arche-crawl-meta \
+    --filecheckerOutput fileList.json \
+    myCollectionDir metadata.ttl
+  ```
+* Creating metadata templates:
+  ```bash
+  /ARCHE/vendor/metacrawler/vendor/bin/arche-create-metadata-template \
+    <pathToDirectoryWhereTemplateShouldBeCreated> \
+    all
+  ```
+  e.g. to create templates in the current directory
+  ```bash
+  /ARCHE/vendor/metacrawler/vendor/bin/arche-create-metadata-template . all
+  ```
 
 ## As a docker container
 
