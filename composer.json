@@ -35,5 +35,6 @@
       ],
     "require-dev": {
         "phpstan/phpstan": "*"
-    }
+    },
+    "minimum-stability": "dev"
 }
