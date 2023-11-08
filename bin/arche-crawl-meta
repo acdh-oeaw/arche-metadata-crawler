@@ -1,0 +1,73 @@
+#!/usr/bin/php
+<?php
+
+/*
+ * The MIT License
+ *
+ * Copyright 2023 zozlak.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+$composerDir = realpath(__DIR__);
+while ($composerDir !== false && !file_exists("$composerDir/vendor")) {
+    $composerDir = realpath("$composerDir/..");
+}
+require_once "$composerDir/vendor/autoload.php";
+
+use acdhOeaw\arche\lib\schema\Ontology;
+use acdhOeaw\arche\lib\Repo;
+use zozlak\logging\Log;
+use Psr\Log\LogLevel;
+use zozlak\RdfConstants as RDF;
+use zozlak\argparse\ArgumentParser;
+use quickRdf\RdfNamespace;
+use quickRdfIo\Util as RdfIoUtil;
+use acdhOeaw\arche\metadataCrawler\DirectoryCrawler;
+use acdhOeaw\arche\metadataCrawler\MetadataChecker;
+
+$parser = new ArgumentParser();
+$parser->addArgument('--repositoryUrl', default: 'https://arche.acdh.oeaw.ac.at/api');
+$parser->addArgument('--logFile', default: 'php://stdout');
+$parser->addArgument('--verbose', action: ArgumentParser::ACTION_STORE_TRUE);
+$parser->addArgument('--idPrefix', default: 'https://id.acdh.oeaw.ac.at');
+$parser->addArgument('--filecheckerOutput', help: 'Path to the repo-file-checker fileList.json file');
+$parser->addArgument('--filecheckerOutputBase');
+$parser->addArgument('dataPath');
+$parser->addArgument('outputPath');
+$args   = $parser->parseArgs();
+
+$log      = new Log($args->logFile, $args->verbose ? LogLevel::DEBUG : LogLevel::INFO);
+$repo     = Repo::factoryFromUrl($args->repositoryUrl);
+$ontology = Ontology::factoryRest($args->repositoryUrl, 'ontology.cache', 36000);
+
+$crawler = new DirectoryCrawler($ontology, $repo->getSchema(), 'https://id.acdh.oeaw.ac.at/test/', $log);
+if (!empty($args->filecheckerOutput)) {
+    $crawler->parseFilecheckerOutput($args->filecheckerOutput, $args->filecheckerOutputBase ?? realpath($args->dataPath));
+}
+$meta = $crawler->crawl($args->dataPath);
+
+$checker = new MetadataChecker($ontology, $repo->getSchema(), $log);
+$checker->check($meta);
+
+$nmsp = new RdfNamespace();
+$nmsp->add('https://vocabs.acdh.oeaw.ac.at/schema#', 'acdh');
+$nmsp->add('https://id.acdh.oeaw.ac.at/', 'acdhi');
+$nmsp->add(RDF::NMSP_RDF, 'rdf');
+RdfIoUtil::serialize($meta, 'text/turtle', $args->outputPath, $nmsp);

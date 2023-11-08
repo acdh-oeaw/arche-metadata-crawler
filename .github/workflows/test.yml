@@ -1,0 +1,18 @@
+name: test
+
+on:
+  push: ~
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    #- uses: mxschmitt/action-tmate@v3
+    - name: composer
+      run: composer update --no-dev -o 
+    - name: test
+      run: |
+        bin/arche-create-metadata-template /tmp all
+        bin/arche-crawl-meta --filecheckerOutput tests/fileList.json tests/data/ /tmp/metadata.ttl
+

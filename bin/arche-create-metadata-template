@@ -1,0 +1,93 @@
+#!/usr/bin/php
+<?php
+
+/*
+ * The MIT License
+ *
+ * Copyright 2023 zozlak.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+$composerDir = realpath(__DIR__);
+while ($composerDir !== false && !file_exists("$composerDir/vendor")) {
+    $composerDir = realpath("$composerDir/..");
+}
+require_once "$composerDir/vendor/autoload.php";
+
+use acdhOeaw\arche\lib\schema\Ontology;
+use acdhOeaw\arche\lib\Repo;
+use zozlak\logging\Log;
+use Psr\Log\LogLevel;
+use zozlak\argparse\ArgumentParser;
+use acdhOeaw\arche\metadataCrawler\TemplateCreator;
+
+$parser = new ArgumentParser();
+$parser->addArgument('--repositoryUrl', default: 'https://arche.acdh.oeaw.ac.at/api');
+$parser->addArgument('--guidelines', default: "foo\nbar a very long line lets see if it works\nbaz");
+$parser->addArgument('--logFile', default: 'php://stdout');
+$parser->addArgument('--verbose', action: ArgumentParser::ACTION_STORE_TRUE);
+$parser->addArgument('--overwrite', action: ArgumentParser::ACTION_STORE_TRUE, help: 'Enforces creation of new files even if they already exist.');
+$parser->addArgument('path');
+$types  = ['Collection', 'TopCollection', 'NamedEntities', 'all'];
+$parser->addArgument('type', choices: $types, nargs: ArgumentParser::NARGS_REQ);
+$args   = $parser->parseArgs();
+
+$log      = new Log($args->logFile, $args->verbose ? LogLevel::DEBUG : LogLevel::INFO);
+$repo     = Repo::factoryFromUrl($args->repositoryUrl);
+$ontology = Ontology::factoryRest($args->repositoryUrl, '/tmp/ontology.cache', 36000);
+
+$creator = new TemplateCreator($ontology, $repo->getSchema(), $repo->getBaseUrl(), $log);
+if (in_array('all', $args->type)) {
+    $args->type = $types;
+}
+if (in_array('Collection', $args->type)) {
+    $path = $args->path . '/__Collection.xlsx';
+    if ($args->overwrite || !file_exists($path)) {
+        $log->info("Creating " . basename($path));
+        $creator->createHorizontalTemplate($path, 'https://vocabs.acdh.oeaw.ac.at/schema#TopCollection', $args->guidelines);
+    } else {
+        $log->warning("Skipping creation of " . basename($path) . " - file already exists. Use --overwrite to enforce.");
+    }
+}
+if (in_array('TopCollection', $args->type)) {
+    $path = $args->path . '/__TopCollection.xlsx';
+    if ($args->overwrite || !file_exists($path)) {
+        $log->info("Creating " . basename($path));
+        $creator->createHorizontalTemplate($path, 'https://vocabs.acdh.oeaw.ac.at/schema#TopCollection', $args->guidelines);
+    } else {
+        $log->warning("Skipping creation of " . basename($path) . " - file already exists. Use --overwrite to enforce.");
+    }
+}
+if (in_array('NamedEntities', $args->type)) {
+    $path = $args->path . '/__NamedEntities.xlsx';
+    if ($args->overwrite || !file_exists($path)) {
+        $log->info("Creating " . basename($path));
+        $classes = [
+            'https://vocabs.acdh.oeaw.ac.at/schema#Person',
+            'https://vocabs.acdh.oeaw.ac.at/schema#Organisation',
+            'https://vocabs.acdh.oeaw.ac.at/schema#Place',
+            'https://vocabs.acdh.oeaw.ac.at/schema#Publication',
+            'https://vocabs.acdh.oeaw.ac.at/schema#Project',
+        ];
+        $creator->createNamedEntitiesTemplate($path, $classes, $args->guidelines);
+    } else {
+        $log->warning("Skipping creation of " . basename($path) . " - file already exists. Use --overwrite to enforce.");
+    }
+}

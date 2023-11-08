@@ -109,8 +109,4 @@ class EntitiesDatabase {
         }
         return $entity->listObjects(new PT($this->schema->id))->current();
     }
-    
-    public function debug(): void {
-        print_r(array_keys($this->byId));
-    }
 }

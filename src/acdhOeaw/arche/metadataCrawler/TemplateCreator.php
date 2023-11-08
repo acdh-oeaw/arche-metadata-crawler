@@ -390,7 +390,7 @@ class TemplateCreator {
     private function setValidation(Worksheet $sheet, string $type,
                                    string $range, string $formula1,
                                    string $formula2, bool $allowBlank): void {
-        $this->log?->info("setting validation of $range to $type: $formula1");
+        $this->log?->debug("setting validation of $range to $type: $formula1");
         $firstCell  = explode(':', $range)[0];
         $validation = $sheet->getCell($firstCell)->getDataValidation();
         $validation->setType($type);

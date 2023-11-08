@@ -3,3 +3,4 @@
 /vendor/
 /composer.lock
 /ontology.cache
+/tests/metadata.ttl

@@ -12,10 +12,12 @@
     ],
     "require": {
         "php": ">=8.1 <8.2",
-        "zozlak/argparse": "^1",
+        "zozlak/argparse": "^1.0",
         "acdh-oeaw/arche-assets": "^3.9.4",
         "acdh-oeaw/arche-lib-schema": "dev-master",
+        "acdh-oeaw/arche-lib-ingest": "dev-rdfInterface",
         "acdh-oeaw/arche-lib": "dev-rdfInterface",
+        "acdh-oeaw/uri-normalizer": "dev-master",
         "phpoffice/phpspreadsheet": "^1.29",
         "sweetrdf/quick-rdf": "dev-master",
         "sweetrdf/rdf-interface": "^2.0.0-RC6",
@@ -28,7 +30,9 @@
         }
     },
     "bin": [
-    ],
+        "bin/arche-create-metadata-template",
+        "bin/arche-crawl-meta"
+      ],
     "require-dev": {
         "phpstan/phpstan": "*"
     }

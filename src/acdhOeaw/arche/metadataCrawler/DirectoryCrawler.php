@@ -30,15 +30,13 @@ use DirectoryIterator;
 use Generator;
 use SplFileInfo;
 use Psr\Log\LoggerInterface;
-use quickRdf\DatasetNode;
 use quickRdf\Dataset;
 use rdfInterface\DatasetInterface;
-use rdfInterface\DatasetNodeInterface;
 use quickRdf\DataFactory as DF;
 use quickRdf\Quad;
 use quickRdf\NamedNode;
-use termTemplates\PredicateTemplate as PT;
 use termTemplates\QuadTemplate as QT;
+use termTemplates\PredicateTemplate as PT;
 use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\Schema;
 use acdhOeaw\arche\lib\ingest\util\FileId;
@@ -111,7 +109,17 @@ class DirectoryCrawler {
         $this->idgen = new FileId($this->idPrefix, $path);
         $meta        = new Dataset();
         $this->crawlDir(new SplFileInfo($path), $meta);
-        return $meta;
+
+        $neMeta = new Dataset();
+        foreach ($meta->listObjects(fn(Quad $x) => $x->getObject() instanceof NamedNode && !$x->getPredicate()->equals($this->idProp)) as $i) {
+            $entityMeta = $this->entitiesDb->get($i->getValue());
+            if ($entityMeta !== null) {
+                $neMeta->add($entityMeta);
+            }
+        }
+        // assure named entities data go first for a smooth import
+        $neMeta->add($meta);
+        return $neMeta;
     }
 
     private function crawlDir(SplFileInfo $path, Dataset $meta): void {
@@ -144,7 +152,6 @@ class DirectoryCrawler {
         }
         $this->metaStack[] = $dirMeta;
 
-        $this->debug($path->getPathname());
         $meta->add($this->getMetadata($path));
         foreach ($dirs as $i) {
             $this->crawlDir($i, $meta);
@@ -155,40 +162,26 @@ class DirectoryCrawler {
         array_pop($this->metaStack);
     }
 
-    private function debug($path): void {
-        echo "----------\n" . $path . "\n";
-        echo "entitiesDb: ";
-        $this->entitiesDb->debug();
-        echo "metaStack:\n";
-        for ($i = count($this->metaStack) - 1; $i >= 0; $i--) {
-            echo "\tlevel $i:\n" . $this->metaStack[$i];
-        }
-        echo "\n";
-    }
-
-    /**
-     * 
-     * @param SplFileInfo $i
-     * @return Generator<Quad>
-     */
-    private function getMetadata(SplFileInfo $path): Generator {
+    private function getMetadata(SplFileInfo $path): Dataset {
         $sbj       = DF::namedNode($this->idgen->getId($path));
-        if (preg_match('`__`', $sbj->getValue())) {
-            print_r($path);
-            exit();
-        }
         $allTmpl   = new QT(DF::namedNode(RDF::OWL_THING));
         $fileTmpl  = new QT($sbj);
         $classTmpl = $fileTmpl->withPredicate(DF::namedNode(RDF::RDF_TYPE));
+
+        $meta = new Dataset();
+        $meta->add(DF::quad($sbj, $this->idProp, $sbj));
         foreach ($this->metaStack as $i) {
+            $graph = DF::namedNode("$i");
             /* @var $i Dataset */
-            $meta = $i->map(fn(Quad $x) => $x->withSubject($sbj), $allTmpl);
-            $meta->add($i->copy($fileTmpl));
+            $meta->add($i->map(fn(Quad $x) => $x->withSubject($sbj)->withGraph($graph), $allTmpl));
+            $meta->add($i->map(fn(Quad $x) => $x->withGraph($graph), $fileTmpl));
             foreach ($meta->listObjects($classTmpl) as $class) {
-                $meta->add($i->map(fn($x) => $x->withSubject($sbj), new QT($class)));
+                $meta->add($i->map(fn($x) => $x->withSubject($sbj)->withGraph($graph), new QT($class)));
             }
-            $meta->add(DF::quad($sbj, $this->idProp, $sbj));
-            yield from $meta;
         }
+        if ($meta->none(new PT($this->schema->label))) {
+            $meta->add(DF::quad($sbj, $this->schema->label, DF::literal($path->getFilename(), 'und')));
+        }
+        return $meta;
     }
 }
