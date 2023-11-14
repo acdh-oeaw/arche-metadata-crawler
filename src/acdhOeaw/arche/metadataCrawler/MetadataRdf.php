@@ -47,13 +47,14 @@ class MetadataRdf implements IteratorAggregate {
     public function __construct(string $path, LoggerInterface | null $log = null) {
         $this->log = $log;
 
-        $this->log?->info("Reading metadat from $path");
+        $this->log?->debug("Trying to map $path as an RDF file");
         $this->meta = new Dataset();
         try {
             $this->meta->add(RdfIoUtil::parse($path, new DF()));
+            $this->log?->info("Reading $path as an RDF file");
             $this->log?->info("\t" . count($this->meta) . " triples read");
         } catch (RdfIoException $ex) {
-            
+            $this->log?->debug("\tFailed to parse $path as and RDF file");
         }
     }
 

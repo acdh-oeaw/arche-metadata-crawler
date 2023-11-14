@@ -31,8 +31,12 @@ use Traversable;
 use Psr\Log\LoggerInterface;
 use quickRdf\DataFactory as DF;
 use quickRdf\Dataset;
+use quickRdf\NamedNode;
 use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\Schema;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use zozlak\RdfConstants as RDF;
 
 /**
  * Description of MetadataHorizontal
@@ -41,58 +45,132 @@ use acdhOeaw\arche\lib\Schema;
  */
 class MetadataHorizontal implements IteratorAggregate {
 
+    use MetadataSpreadsheetTrait;
+
+    private const COL_VALUE    = '/^value *[1-9]$/';
+    private const COL_PROPERTY = 'property';
+    private const MAP_ROW_FROM = 1;
+    private const MAP_ROW_TO   = 20;
+    private const MAP_COL_FROM = 1;
+    private const MAP_COL_TO   = 20;
+
     private Dataset $meta;
     private Ontology $ontology;
     private Schema $schema;
+    private string $idPrefix;
     private LoggerInterface | null $log;
 
+    /**
+     * 
+     * @var array<string, array<string, int|PropertyDesc>>
+     */
+    private array $mapping;
+    private int $valueColumn;
+
     public function __construct(string $path, Ontology $ontology,
-                                Schema $schema,
+                                Schema $schema, string $idPrefix,
+                                string $defaultLang,
                                 LoggerInterface | null $log = null) {
         $this->ontology = $ontology;
         $this->schema   = $schema;
+        $this->idPrefix = $idPrefix;
         $this->log      = $log;
         $this->meta     = new Dataset();
+
+        $spreadsheet = IOFactory::load($path);
+        $sheet       = $spreadsheet->getSheet(0);
+        $this->log?->debug("Trying to map $path as a horizontal metadata file");
+        if ($this->mapStructure($sheet, $defaultLang)) {
+            $this->log?->info("Reading $path as a horizontal metadata file");
+            $this->readMetadata($sheet);
+        }
     }
 
     public function getIterator(): Traversable {
         return $this->meta->getIterator();
     }
 
-    private function foo(): void {
-
-        $predicateCol  = $valueStartCol = null;
-        for ($row = 1; $row <= 20; $row++) {
-            for ($col = 1; $col < 100; $col++) {
-                $val = mb_strtolower(trim($sheet->getCell([$col, $row])->getValue()));
-                $val = str_replace([' ', '_', '-'], '', $val);
-                if ($val === 'machinename') {
-                    $predicateCol = $col;
-                } elseif ($val === 'value1') {
-                    $valueStartCol = $col;
+    private function mapStructure(Worksheet $sheet, string $defaultLang): bool {
+        for ($row = self::MAP_ROW_FROM; $row <= self::MAP_ROW_TO; $row++) {
+            $propCol  = null;
+            $valueCol = null;
+            for ($col = self::MAP_COL_FROM; $col <= self::MAP_COL_TO; $col++) {
+                $cell = $sheet->getCell([$col, $row]);
+                $val  = mb_strtolower(trim($cell->getCalculatedValue()));
+                if ($val === self::COL_PROPERTY && $propCol === null) {
+                    $propCol = $cell->getColumn();
+                } elseif ($valueCol === null && preg_match(self::COL_VALUE, $val)) {
+                    $valueCol = $col;
                 }
             }
-            if ($predicateCol !== null && $valueStartCol !== null) {
+            if ($propCol !== null && $valueCol !== null) {
+                $row++;
                 break;
             }
         }
-        if ($predicateCol === null || $valueStartCol === null) {
-            throw new RuntimeException('unrecognized format');
+        if ($propCol === null || $valueCol === null) {
+            $this->log?->debug("\tFailed to find a property column or value columns");
+            return false;
         }
-        $rowMax = $sheet->getHighestDataRow();
-        for ($row = $row + 1; $row <= $rowMax; $row++) {
-            $predicate = trim($sheet->getCell([$predicateCol, $row])->getValue());
-            if (empty($predicate)) {
-                continue;
+
+        $nmsp    = $this->ontology->getNamespace();
+        $idProp  = (string) $this->schema->id;
+        $rowMax  = $sheet->getHighestDataRow();
+        $mapping = [];
+        for ($row; $row <= $rowMax; $row++) {
+            $val = $sheet->getCell($propCol . $row)->getCalculatedValue();
+            if (!str_starts_with($val, $nmsp)) {
+                $val = $nmsp . $val;
             }
-            $colMax = PhpOffice\PhpSpreadsheet\Cell\Coordinate::indexesFromString($sheet->getHighestDataColumn($row) . '1')[0];
-            for ($col = $valueStartCol; $col <= $colMax; $col++) {
-                $value = trim($sheet->getCell([$col, $row])->getValue());
-                "$predicate $value\n";
-                if (!empty($value)) {
-                    echo "$predicate $value\n";
+            $property = $this->ontology->getProperty(null, $val);
+            if ($property !== null) {
+                $mapping[] = [
+                    'row'         => $row,
+                    'description' => $property,
+                    'defaultLang' => $property->langTag ? $defaultLang : null,
+                ];
+            }
+        }
+        $idMapping = array_filter($mapping, fn($x) => $x['description']->uri === $idProp);
+        if (count($idMapping) === 0) {
+            $this->log?->debug("\tFailed to find an id property");
+            return false;
+        }
+
+        $this->mapping     = $mapping;
+        $this->valueColumn = $valueCol;
+        return true;
+    }
+
+    private function readMetadata(Worksheet $sheet): void {
+        $sbj    = null;
+        $idProp = (string) $this->schema->id;
+        $idMap  = array_filter($this->mapping, fn($x) => $x['description']->uri === $idProp);
+        $idRow  = reset($idMap)['row'];
+        for ($col = $this->valueColumn; $col <= self::MAP_COL_TO; $col++) {
+            $val = trim($sheet->getCell([$col, $idRow])->getValue());
+            // the second condition is an exact match on the top collection
+            if (str_starts_with($val, $this->idPrefix) || $val === substr($this->idPrefix, 0, -1)) {
+                $sbj = $val;
+                break;
+            }
+        }
+        if ($sbj === null) {
+            $this->log?->warning("\tFailed to find an id matching the id prefix of $this->idPrefix");
+            return;
+        }
+        $sbj = DF::namedNode($sbj);
+
+        foreach ($this->mapping as $desc) {
+            $property = DF::namedNode($desc['description']->uri);
+            for ($col = $this->valueColumn; $col <= self::MAP_COL_TO; $col++) {
+                $cell  = $sheet->getCell([$col, $desc['row']]);
+                $value = $this->getValue($cell, $desc['description'], $desc['defaultLang']);
+                if ($value !== null) {
+                    $this->meta->add(DF::quad($sbj, $property, $value));
                 }
             }
         }
+        $this->log?->info("\t" . count($this->meta) . " triples read");
     }
 }

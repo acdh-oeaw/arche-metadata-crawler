@@ -26,11 +26,18 @@
 
 namespace acdhOeaw\arche\metadataCrawler;
 
+use Exception;
+use Throwable;
+
 /**
  * Description of MetadataCrawlerException
  *
  * @author zozlak
  */
-class MetadataCrawlerException extends \Exception {
-    //put your code here
+class MetadataCrawlerException extends Exception {
+
+    public function __construct(string $message = "", int $code = 1,
+                                ?Throwable $previous = null): Exception {
+        return parent::__construct($message, $code, $previous);
+    }
 }

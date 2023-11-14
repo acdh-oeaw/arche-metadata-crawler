@@ -167,6 +167,11 @@ class TemplateCreator {
 
         $this->addGuidelines($spreadsheet->getActiveSheet(), $guidelines);
 
+        $vocabularySheet = new Worksheet(null, self::VOCABULARY_SHEET);
+        $spreadsheet->addSheet($vocabularySheet);
+        $this->protectSheet($vocabularySheet);
+        $vocabularies    = [];
+
         $properties = $classDesc->getProperties();
         $properties = array_filter($properties, fn(PropertyDesc $x) => !$x->automatedFill && 0 === count(array_intersect($x->property, self::SKIP_PROPERTIES)));
         $orderFn    = fn(PropertyDesc $x) => -999999 * in_array($labelProp, $x->property) - 888888 * in_array($idProp, $x->property) - 777777 * ($x->min > 0) - 666666 * $x->recommendedClass + $x->ordering;
@@ -226,19 +231,19 @@ class TemplateCreator {
 
             $styleNa = $this->getStyle($style, false, true);
             if ($prop->max === 1) {
-                $sheet->setCellValue("F$row", 'Not Applicable');
-                $sheet->setCellValue("G$row", 'Not Applicable');
                 $sheet->getStyle("E$row")->applyFromArray($styleContent);
                 $sheet->getStyle("F$row:G$row")->applyFromArray($styleNa);
-                $unprotectRange = "E$row";
+                $valuesRange = "E$row";
             } else {
                 $sheet->getStyle("E$row:G$row")->applyFromArray($styleContent);
-                $unprotectRange = "E$row:N$row";
+                $valuesRange = "E$row:N$row";
             }
-            $sheet->getStyle($unprotectRange)
+            $sheet->getStyle($valuesRange)
                 ->getProtection()
                 ->setLocked(\PhpOffice\PhpSpreadsheet\Style\Protection::PROTECTION_UNPROTECTED);
 
+            $this->processValidation($prop, $vocabularies, $sheet, $valuesRange, $vocabularySheet, []);
+            
             $sheet->getRowDimension($row)->setRowHeight(self::HORIZONTAL_ROW_HEIGHT, 'cm');
         }
 
@@ -343,30 +348,7 @@ class TemplateCreator {
                 $sheet->getColumnDimensionByColumn($i + 1)->setWidth(4, 'cm');
 
                 $valuesRange = $col . $firstRow . ':' . $col . $lastRow;
-                $allowBlank  = ($prop->min ?? 0) === 0;
-                $targetClass = array_intersect($prop->range, $classes);
-                $targetRange = array_intersect($prop->range, array_keys($vocabularies));
-                $targetRange = reset($targetRange);
-                if (!empty($prop->vocabs)) {
-                    if (!isset($vocabularies[$prop->vocabs])) {
-                        $vocabularies[$prop->vocabs] = $this->importVocabulary($prop->vocabs, $prop->getVocabularyValues(), $vocabularySheet, end($vocabularies) ?: 'A1:A1');
-                    }
-                    $this->setValidation($sheet, DataValidation::TYPE_LIST, $valuesRange, "'" . self::VOCABULARY_SHEET . "'!" . $vocabularies[$prop->vocabs], '', $allowBlank);
-                } elseif (count($targetClass) > 0) {
-                    $targetClass    = reset($targetClass);
-                    $targetSheet    = $this->shortenUri($targetClass);
-                    $targetFirstRow = $this->getFirstRow($targetClass);
-                    $targetRange    = "'$targetSheet'!" . '$A$' . $targetFirstRow . ':$A$' . ($targetFirstRow + self::ENTRY_ROWS);
-                    $this->setValidation($sheet, DataValidation::TYPE_LIST, $valuesRange, $targetRange, '', $allowBlank);
-                } elseif (in_array(RDF::XSD_DATE, $prop->range)) {
-                    $this->setValidation($sheet, DataValidation::TYPE_DATE, $valuesRange, '', '', $allowBlank);
-                } elseif (in_array(RDF::XSD_DATE_TIME, $prop->range)) {
-                    $this->setValidation($sheet, DataValidation::TYPE_TIME, $valuesRange, '', '', $allowBlank);
-                } elseif (isset($vocabularies[$targetRange])) {
-                    $this->setValidation($sheet, DataValidation::TYPE_LIST, $valuesRange, "'" . self::VOCABULARY_SHEET . "'!" . $vocabularies[$targetRange], '', $allowBlank);
-                } elseif (in_array(RDF::XSD_ANY_URI, $prop->range) || $prop->type === RDF::OWL_OBJECT_PROPERTY) {
-                    $this->setValidation($sheet, DataValidation::TYPE_CUSTOM, $valuesRange, str_replace('%cell%', $col . $firstRow, self::URL_FORMULA), '', $allowBlank);
-                }
+                $this->processValidation($prop, $vocabularies, $sheet, $valuesRange, $vocabularySheet, $classes);
             }
             $style  = $this->getStyle('content', false, true);
             $height = $style['font']['size'] * 1.6;
@@ -385,6 +367,37 @@ class TemplateCreator {
 
         $writer = new Xlsx($spreadsheet);
         $writer->save($path);
+    }
+
+    private function processValidation(PropertyDesc $prop, array &$vocabularies,
+                                       Worksheet $sheet, string $valuesRange,
+                                       Worksheet $vocabularySheet,
+                                       array $classes): void {
+        $allowBlank  = ($prop->min ?? 0) === 0;
+        $targetClass = array_intersect($prop->range, $classes);
+        $targetRange = array_intersect($prop->range, array_keys($vocabularies));
+        $targetRange = reset($targetRange);
+        if (!empty($prop->vocabs)) {
+            if (!isset($vocabularies[$prop->vocabs])) {
+                $vocabularies[$prop->vocabs] = $this->importVocabulary($prop->vocabs, $prop->getVocabularyValues(), $vocabularySheet, end($vocabularies) ?: 'A1:A1');
+            }
+            $this->setValidation($sheet, DataValidation::TYPE_LIST, $valuesRange, "'" . self::VOCABULARY_SHEET . "'!" . $vocabularies[$prop->vocabs], '', $allowBlank);
+        } elseif (count($targetClass) > 0) {
+            $targetClass    = reset($targetClass);
+            $targetSheet    = $this->shortenUri($targetClass);
+            $targetFirstRow = $this->getFirstRow($targetClass);
+            $targetRange    = "'$targetSheet'!" . '$A$' . $targetFirstRow . ':$A$' . ($targetFirstRow + self::ENTRY_ROWS);
+            $this->setValidation($sheet, DataValidation::TYPE_LIST, $valuesRange, $targetRange, '', $allowBlank);
+        } elseif (in_array(RDF::XSD_DATE, $prop->range)) {
+            $this->setValidation($sheet, DataValidation::TYPE_DATE, $valuesRange, '', '', $allowBlank);
+        } elseif (in_array(RDF::XSD_DATE_TIME, $prop->range)) {
+            $this->setValidation($sheet, DataValidation::TYPE_TIME, $valuesRange, '', '', $allowBlank);
+        } elseif (isset($vocabularies[$targetRange])) {
+            $this->setValidation($sheet, DataValidation::TYPE_LIST, $valuesRange, "'" . self::VOCABULARY_SHEET . "'!" . $vocabularies[$targetRange], '', $allowBlank);
+        } elseif (in_array(RDF::XSD_ANY_URI, $prop->range) || $prop->type === RDF::OWL_OBJECT_PROPERTY) {
+            $firstCell = explode(':', $valuesRange)[0];
+            $this->setValidation($sheet, DataValidation::TYPE_CUSTOM, $valuesRange, str_replace('%cell%', $firstCell, self::URL_FORMULA), '', $allowBlank);
+        }
     }
 
     private function setValidation(Worksheet $sheet, string $type,

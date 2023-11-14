@@ -1,0 +1,19 @@
+@prefix acdh: <https://vocabs.acdh.oeaw.ac.at/schema#> .
+@prefix acdhi: <https://id.acdh.oeaw.ac.at/> .
+<https://id.acdh.oeaw.ac.at/tests/wrongContent> {
+    <http://www.w3.org/2002/07/owl#Thing>
+        acdh:hasLicense <https://creativecommons.org/licenses/by-sa/4.0/> .
+    acdh:Resource 
+        acdh:hasAuthor acdhi:pandorfer, acdh:mzoltak .
+}
+{
+    <http://www.w3.org/2002/07/owl#Thing>
+        acdh:hasHosting <http://foo/hosting> ;
+        acdh:hasLicense <https://creativecommons.org/licenses/by-nc/4.0/> ;
+        acdh:hasAuthor <https://id.acdh.oeaw.ac.at/mtrognitz> ,
+            <https://orcid.org/0000-0002-9575-9372> .
+    <https://id.acdh.oeaw.ac.at/tests/wrongContent/no_xml_declaration.xml>
+        acdh:hasTitle "No XML Declaration"@en , "Kein XML Deklartionen"@de .
+    acdh:Resource 
+        acdh:hasAuthor acdhi:mdurco .
+}

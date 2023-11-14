@@ -26,23 +26,18 @@
 
 namespace acdhOeaw\arche\metadataCrawler;
 
-use ArrayIterator;
 use IteratorAggregate;
 use Traversable;
 use Psr\Log\LoggerInterface;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\ColumnCellIterator;
 use PhpOffice\PhpSpreadsheet\Worksheet\RowCellIterator;
 use zozlak\RdfConstants as RDF;
 use quickRdf\DataFactory as DF;
 use quickRdf\Dataset;
-use quickRdf\DatasetNode;
 use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\Schema;
-use acdhOeaw\arche\lib\schema\PropertyDesc;
 use acdhOeaw\arche\lib\ingest\util\FileId;
 
 /**
@@ -51,6 +46,8 @@ use acdhOeaw\arche\lib\ingest\util\FileId;
  * @author zozlak
  */
 class MetadataVertical implements IteratorAggregate {
+
+    use MetadataSpreadsheetTrait;
 
     private const HEADER_ROW_MAX  = 10;
     private const COLUMN_PATH     = 'path';
@@ -68,10 +65,14 @@ class MetadataVertical implements IteratorAggregate {
      * @var array<string, array<string, string|PropertyDesc>>
      */
     private array $mapping;
+    private ?string $colPath;
+    private ?string $colDir;
+    private ?string $colFilename;
     private int $firstRow;
 
     public function __construct(string $path, Ontology $ontology,
                                 Schema $schema, string $idPrefix,
+                                string $defaultLang,
                                 LoggerInterface | null $log = null) {
         if (substr($idPrefix, -1) !== '/') {
             $idPrefix .= '/';
@@ -84,22 +85,23 @@ class MetadataVertical implements IteratorAggregate {
 
         $spreadsheet = IOFactory::load($path);
         $sheet       = $spreadsheet->getSheet(0);
-        $this->log?->info("Mapping $path as vertical metadata file");
-        $this->mapStructure($sheet);
-        if (isset($this->mapping)) {
+        $this->log?->debug("Trying to map $path as a vertical metadata file");
+        if ($this->mapStructure($sheet, $defaultLang)) {
+            $this->log?->info("Reading $path as a vertical metadata file");
             $this->readMetadata($sheet);
         }
     }
 
     public function getIterator(): Traversable {
-        return $this->meta;
+        return $this->meta->getIterator();
     }
 
-    private function mapStructure(Worksheet $sheet): void {
+    private function mapStructure(Worksheet $sheet, string $defaultLang): bool {
         $nmsp   = $this->ontology->getNamespace();
         $colMax = $sheet->getHighestDataColumn();
         for ($headerRow = 1; $headerRow <= self::HEADER_ROW_MAX; $headerRow++) {
-            $mapping = [
+            $propMapping = [];
+            $fileMapping = [
                 self::COLUMN_PATH     => null,
                 self::COLUMN_DIR      => null,
                 self::COLUMN_FILENAME => null,
@@ -108,41 +110,51 @@ class MetadataVertical implements IteratorAggregate {
                 /* @var $cell Cell */
                 $col = $cell->getColumn();
                 $v   = mb_strtolower($cell->getValue());
-                if (array_key_exists($v, $mapping)) {
-                    $mapping[$v] = $col;
+                if (array_key_exists($v, $fileMapping)) {
+                    $fileMapping[$v] = $col;
                     continue;
                 }
                 $v = $cell->getValue();
-                if (!empty($v)) {
-                    if (!str_starts_with($v, $nmsp)) {
-                        $v = $nmsp . $v;
-                    }
-                    $property = $this->ontology->getProperty(null, $v);
-                    if ($property !== null) {
-                        $mapping[$property->uri] = ['column' => $col, 'description' => $property];
-                    }
+                if (empty($v)) {
+                    continue;
+                }
+                if (!str_starts_with($v, $nmsp)) {
+                    $v = $nmsp . $v;
+                }
+                list($v, $lang) = $this->getPropertyLang($v, $defaultLang);
+                $property = $this->ontology->getProperty(null, $v);
+                if ($property !== null) {
+                    $propMapping[] = [
+                        'column'      => $col,
+                        'description' => $property,
+                        'defaultLang' => $property->langTag ? $lang : null,
+                    ];
                 }
             }
-            if (($mapping[self::COLUMN_PATH] !== null || $mapping[self::COLUMN_DIR] !== null && $mapping[self::COLUMN_FILENAME] !== null) && count($mapping) > 3) {
+            if (count($propMapping) > 0 && array_sum(array_map(fn($x) => $x !== null, $fileMapping)) === count($fileMapping)) {
                 break;
             }
         }
-        if ($headerRow <= self::HEADER_ROW_MAX) {
-            $this->mapping  = $mapping;
-            $this->firstRow = $headerRow + 1;
+        if ($headerRow > self::HEADER_ROW_MAX) {
+            $this->log?->debug("\tFailed to find required columns");
+            return false;
         }
+        $this->mapping     = $propMapping;
+        $this->colDir      = $fileMapping[self::COLUMN_DIR];
+        $this->colFilename = $fileMapping[self::COLUMN_FILENAME];
+        $this->colPath     = $fileMapping[self::COLUMN_PATH];
+        $this->firstRow    = $headerRow + 1;
+        return true;
     }
 
     private function readMetadata(Worksheet $sheet): void {
         $map      = $this->mapping;
-        unset($map[self::COLUMN_PATH]);
-        unset($map[self::COLUMN_DIR]);
-        unset($map[self::COLUMN_FILENAME]);
         $rowMax   = $sheet->getHighestDataRow();
         $prevPath = '';
         $prevDir  = '';
         $sbj      = null;
-        $n = 0;
+        $n        = 0;
+
         for ($row = $this->firstRow; $row <= $rowMax; $row++) {
             $path = $this->getPaths($sheet, $row, $prevDir);
             if (empty($path)) {
@@ -154,13 +166,14 @@ class MetadataVertical implements IteratorAggregate {
                 }
                 $prevPath = $path;
             }
-            if (!empty($path)) {
-                foreach ($map as $property => $i) {
-                    $value = trim($sheet->getCell($i['column'] . $row)->getValue());
-                    if (!empty($value)) {
-                        $value = $i['description']->type === RDF::OWL_DATATYPE_PROPERTY ? DF::literal($value) : DF::namedNode($value);
-                        $this->meta->add(DF::quad($sbj, DF::namedNode($property), $value));
-                    }
+            if (empty($path)) {
+                continue;
+            }
+            foreach ($map as $desc) {
+                $cell  = $sheet->getCell($desc['column'] . $row);
+                $value = $this->getValue($cell, $desc['description'], $desc['defaultLang']);
+                if ($value !== null) {
+                    $this->meta->add(DF::quad($sbj, DF::namedNode($desc['description']->uri), $value));
                 }
             }
         }
@@ -169,11 +182,11 @@ class MetadataVertical implements IteratorAggregate {
 
     private function getPaths(Worksheet $sheet, int $row, string &$prevDir): string {
         $path1 = $path2 = '';
-        if (isset($this->mapping[self::COLUMN_PATH])) {
-            $path1 = trim($sheet->getCell($this->mapping[self::COLUMN_PATH] . $row)->getValue());
+        if (isset($this->colPath)) {
+            $path1 = trim($sheet->getCell($this->colPath . $row)->getValue());
         }
-        if (isset($this->mapping[self::COLUMN_FILENAME]) && isset($this->mapping[self::COLUMN_DIR])) {
-            $dir = trim((string) $sheet->getCell($this->mapping[self::COLUMN_DIR] . $row)->getValue());
+        if (isset($this->colFilename) && isset($this->colDir)) {
+            $dir = trim((string) $sheet->getCell($this->colDir . $row)->getValue());
             if (empty($dir)) {
                 $dir = $prevDir;
             } else {
@@ -182,7 +195,7 @@ class MetadataVertical implements IteratorAggregate {
             if (!empty($dir) && substr($dir, -1) !== '/') {
                 $dir .= '/';
             }
-            $filename = trim($sheet->getCell($this->mapping[self::COLUMN_FILENAME] . $row)->getValue());
+            $filename = trim($sheet->getCell($this->colFilename . $row)->getValue());
             if (!empty($filename)) {
                 $path2 = $dir . $filename;
             }

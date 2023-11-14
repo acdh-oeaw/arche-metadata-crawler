@@ -1,9 +1,0 @@
-@prefix acdh: <https://vocabs.acdh.oeaw.ac.at/schema#> .
-<http://www.w3.org/2002/07/owl#Thing>
-    acdh:hasLicense <https://vocabs.acdh.oeaw.ac.at/archelicenses/cc-by-nd-4-0> ;
-    acdh:hasRightsHolder <https://d-nb.info/gnd/1001454-8> ;
-    acdh:hasHosting <https://foo.bar> .
-acdh:Resource 
-    acdh:hasHosting <https://id.acdh.oeaw.ac.at/arche> .
-<https://id.acdh.oeaw.ac.at/test/wrongContent/no_xml_declaration.xml> 
-    acdh:hasHosting <https://my/hosting> .

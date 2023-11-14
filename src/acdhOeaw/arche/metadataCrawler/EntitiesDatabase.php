@@ -67,15 +67,15 @@ class EntitiesDatabase {
     /**
      * 
      * @param iterable<DatasetNodeInterface> $entities
-     * @return void
+     * @return int number of added entities
      */
-    public function add(iterable $entities): void {
-        $nmsp      = $this->ontology->getNamespace();
+    public function add(iterable $entities): int {
         $idProp    = (string) $this->schema->id;
         $labelProp = (string) $this->schema->label;
         $classTmpl = new PT(DF::namedNode(RDF::RDF_TYPE));
         $labelTmpl = new PT(DF::namedNode($labelProp));
         $idTmpl    = new PT(DF::namedNode($idProp));
+        $n         = 0;
         foreach ($entities as $entity) {
             /* @var $entity DatasetNodeInterface */
             $classes = $entity->listObjects($classTmpl)->getValues();
@@ -91,7 +91,9 @@ class EntitiesDatabase {
             foreach ($entity->listObjects($idTmpl)->getValues() as $id) {
                 $this->byId[$id] = $entity;
             }
+            $n++;
         }
+        return $n;
     }
 
     public function exists(string $id, string | null $class = null): bool {

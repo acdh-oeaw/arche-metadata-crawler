@@ -1,0 +1,8 @@
+[
+{"directory":"/home/zozlak/roboty/ACDH/repo/metadata-crawler/tests/data/bagit/anotherBag","filename":"manifest-sha1.txt","type":"file","size":58,"lastModified":"2017-06-27 08:52:51","extension":"txt","mime":"text/plain","valid":true},
+{"directory":"/home/zozlak/roboty/ACDH/repo/metadata-crawler/tests/data/bagit/anotherBag","filename":"tagmanifest-sha1.txt","type":"file","size":164,"lastModified":"2017-06-27 08:52:51","extension":"txt","mime":"text/plain","valid":true},
+{"directory":"/home/zozlak/roboty/ACDH/repo/metadata-crawler/tests/data/good","filename":"text.pdf","type":"file","size":23881,"lastModified":"2023-02-03 18:14:00","extension":"pdf","mime":"application/pdf","valid":true},
+{"directory":"/home/zozlak/roboty/ACDH/repo/metadata-crawler/tests/data/good","filename":"text.txt","type":"file","size":8,"lastModified":"2023-02-03 17:39:43","extension":"txt","mime":"text/plain","valid":true},
+{"directory":"/home/zozlak/roboty/ACDH/repo/metadata-crawler/tests/data/wrongContent","filename":"no_schema_location.xml","type":"file","size":569,"lastModified":"2023-02-09 11:51:43","extension":"xml","mime":"text/xml","valid":false},
+{"directory":"/home/zozlak/roboty/ACDH/repo/metadata-crawler/tests/data/wrongContent","filename":"no_xml_declaration.xml","type":"file","size":1552,"lastModified":"2023-02-09 10:06:25","extension":"xml","mime":"text/plain","valid":false}
+]

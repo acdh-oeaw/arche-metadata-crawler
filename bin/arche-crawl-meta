@@ -39,35 +39,54 @@ use zozlak\RdfConstants as RDF;
 use zozlak\argparse\ArgumentParser;
 use quickRdf\RdfNamespace;
 use quickRdfIo\Util as RdfIoUtil;
-use acdhOeaw\arche\metadataCrawler\DirectoryCrawler;
+use acdhOeaw\arche\metadataCrawler\MetadataCrawler;
 use acdhOeaw\arche\metadataCrawler\MetadataChecker;
+use acdhOeaw\arche\metadataCrawler\MetadataCrawlerException;
 
 $parser = new ArgumentParser();
+$parser->addArgument('--defaultLang', default: 'und');
 $parser->addArgument('--repositoryUrl', default: 'https://arche.acdh.oeaw.ac.at/api');
 $parser->addArgument('--logFile', default: 'php://stdout');
 $parser->addArgument('--verbose', action: ArgumentParser::ACTION_STORE_TRUE);
-$parser->addArgument('--idPrefix', default: 'https://id.acdh.oeaw.ac.at');
-$parser->addArgument('--filecheckerOutput', help: 'Path to the repo-file-checker fileList.json file');
-$parser->addArgument('--filecheckerOutputBase');
-$parser->addArgument('dataPath');
-$parser->addArgument('outputPath');
+$parser->addArgument('--tmpDir', default: '/tmp');
+$parser->addArgument('metadataDir');
+$parser->addArgument('outputFile');
+$parser->addArgument('dataDir');
+$parser->addArgument('idPrefix');
 $args   = $parser->parseArgs();
 
-$log      = new Log($args->logFile, $args->verbose ? LogLevel::DEBUG : LogLevel::INFO);
-$repo     = Repo::factoryFromUrl($args->repositoryUrl);
-$ontology = Ontology::factoryRest($args->repositoryUrl, 'ontology.cache', 36000);
-
-$crawler = new DirectoryCrawler($ontology, $repo->getSchema(), 'https://id.acdh.oeaw.ac.at/test/', $log);
-if (!empty($args->filecheckerOutput)) {
-    $crawler->parseFilecheckerOutput($args->filecheckerOutput, $args->filecheckerOutputBase ?? realpath($args->dataPath));
+$log = new Log($args->logFile, $args->verbose ? LogLevel::DEBUG : LogLevel::INFO);
+if (!file_exists($args->metadataDir . '/fileList.json')) {
+    $log->error("Metadata directory $args->metadataDir doesn't contain the filechecker output (fileList.json)");
+    exit(1);
 }
-$meta = $crawler->crawl($args->dataPath);
 
-$checker = new MetadataChecker($ontology, $repo->getSchema(), $log);
-$checker->check($meta);
+$repo     = Repo::factoryFromUrl($args->repositoryUrl);
+$ontology = Ontology::factoryRest($args->repositoryUrl, $args->tmpDir . '/ontology.cache', 36000);
 
-$nmsp = new RdfNamespace();
-$nmsp->add('https://vocabs.acdh.oeaw.ac.at/schema#', 'acdh');
-$nmsp->add('https://id.acdh.oeaw.ac.at/', 'acdhi');
-$nmsp->add(RDF::NMSP_RDF, 'rdf');
-RdfIoUtil::serialize($meta, 'text/turtle', $args->outputPath, $nmsp);
+try {
+    $log->info("----------------------------------------");
+    $log->info("Reading and merging metadata");
+    $log->info("----------------------------------------");
+    $crawler = new MetadataCrawler($args->metadataDir, $ontology, $repo->getSchema(), $args->idPrefix, $args->dataDir, $args->defaultLang, $log);
+    $meta    = $crawler->crawl();
+
+    $log->info("----------------------------------------");
+    $log->info("Checking merged metadata");
+    $log->info("----------------------------------------");
+
+    $checker = new MetadataChecker($ontology, $repo->getSchema(), $log);
+    $checker->check($meta);
+
+    $log->info("----------------------------------------");
+    $log->info("Saving the output to " . realpath($args->outputFile));
+    $log->info("----------------------------------------");
+    $nmsp = new RdfNamespace();
+    $nmsp->add('https://vocabs.acdh.oeaw.ac.at/schema#', 'acdh');
+    $nmsp->add('https://id.acdh.oeaw.ac.at/', 'acdhi');
+    $nmsp->add(RDF::NMSP_RDF, 'rdf');
+    RdfIoUtil::serialize($meta, 'text/turtle', $args->outputFile, $nmsp);
+} catch (MetadataCrawlerException $e) {
+    $log->error($e->getMessage());
+    exit($e->getCode());
+}

@@ -50,6 +50,8 @@ use Psr\Log\LoggerInterface;
  */
 class EntityListWorksheet {
 
+    use MetadataSpreadsheetTrait;
+
     public const STRICT_REQUIRED      = 1;
     public const STRICT_RECOMMENDED   = 2;
     public const STRICT_OPTIONAL      = 3;
@@ -64,6 +66,8 @@ class EntityListWorksheet {
 
     private Ontology $ontology;
     private Schema $schema;
+    private string $defaultLang;
+    private string $path;
 
     /**
      * 
@@ -73,15 +77,17 @@ class EntityListWorksheet {
     private LoggerInterface | null $log     = null;
 
     public function __construct(string $path, Ontology $ontology,
-                                Schema $schema,
+                                Schema $schema, string $defaultLang,
                                 int $strictness = self::STRICT_OPTIONAL,
                                 ?LoggerInterface $log = null) {
-        $spreadsheet    = IOFactory::load($path);
-        $this->ontology = $ontology;
-        $this->schema   = $schema;
-        $this->log      = $log;
-        
-        $this->log?->info("Mapping $path as entities database");
+        $spreadsheet       = IOFactory::load($path);
+        $this->path        = $path;
+        $this->ontology    = $ontology;
+        $this->schema      = $schema;
+        $this->defaultLang = $defaultLang;
+        $this->log         = $log;
+
+        $this->log?->debug("Trying to map $path as an entities database");
         $this->mapWorksheets($spreadsheet, $strictness);
     }
 
@@ -90,6 +96,9 @@ class EntityListWorksheet {
      * @return Generator<DatasetNode>
      */
     public function readEntities(): Generator {
+        if (count($this->classes) > 0) {
+            $this->log?->info("Reading $this->path as a named entities file");
+        }
         foreach ($this->classes as $sheetCfg) {
             yield from $this->loadEntities($sheetCfg);
         }
@@ -149,14 +158,17 @@ class EntityListWorksheet {
                 $this->log?->warning("\tSheet $sheetName matches multiple classes: " . implode(', ', array_keys($matchingClasses)));
                 continue;
             } elseif (count($matchingClasses) === 0) {
-                $this->log?->info("\tSheet $sheetName matches no classes");
+                $this->log?->debug("\tSheet $sheetName matches no classes");
                 continue;
             }
             $classDesc             = reset($matchingClasses);
             $class                 = $classDesc->uri;
             $properties            = array_map(fn($x) => $classDesc->properties[$x], $properties);
-            $this->log?->info("\tSheet $sheetName mapped to class $class");
+            $this->log?->debug("\tSheet $sheetName mapped to class $class");
             $this->classes[$class] = new _WorksheetConfig($classDesc, $sheet, $row, $properties);
+        }
+        if (count($this->classes) === 0) {
+            $this->log?->debug("\tFailed to find a mapping for any named entities class");
         }
     }
 
@@ -202,17 +214,18 @@ class EntityListWorksheet {
                 continue;
             }
             foreach ($cfg->propertyMap as $col => $prop) {
-                $obj = trim($sheet->getCell($col . $row)->getCalculatedValue());
-                if (!empty($obj)) {
-                    if ($col === $idCol) {
-                        if (isset($uniqueIds[$obj])) {
-                            $this->log?->error("\t\tIdentifier $obj used more than once in row $row");
-                        }
-                        $uniqueIds[$obj] = ($uniqueIds[$obj] ?? 0) + 1;
-                    }
-                    $obj = $prop->type === RDF::OWL_DATATYPE_PROPERTY ? DF::literal($obj) : DF::namedNode($obj);
-                    $entity->add(DF::quad($entity->getNode(), $predMap[$col], $obj));
+                $cell = $sheet->getCell($col . $row);
+                $obj  = $this->getValue($cell, $prop, $this->defaultLang);
+                if ($obj === null) {
+                    continue;
                 }
+                if ($col === $idCol) {
+                    if (isset($uniqueIds[(string) $obj])) {
+                        $this->log?->error("\t\tIdentifier $obj used more than once in row $row");
+                    }
+                    $uniqueIds[(string) $obj] = ($uniqueIds[(string) $obj] ?? 0) + 1;
+                }
+                $entity->add(DF::quad($entity->getNode(), $predMap[$col], $obj));
             }
         }
         if ($entity !== null && self::checkEntity($entity, $cfg->propertyMap)) {
