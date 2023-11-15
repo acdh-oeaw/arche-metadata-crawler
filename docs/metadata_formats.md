@@ -17,6 +17,8 @@ The metadata-crawler can process metadata in four formats:
 All of the metadata files should be gathered in one directory (a _metadata directory_).
 Filenames do not matter as the metadata-crawler recognizes the file format by its content.
 
+An example metadata directory can be found [here](https://github.com/acdh-oeaw/arche-metadata-crawler/tree/master/tests/meta).
+
 ## fileList.json
 
 This is a file produced by the [repo-filechecker](https://github.com/acdh-oeaw/repo-file-checker) at the end of its checks.
