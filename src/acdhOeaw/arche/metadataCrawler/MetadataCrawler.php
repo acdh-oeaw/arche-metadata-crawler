@@ -228,16 +228,38 @@ class MetadataCrawler {
             $meta->add($metaTmp);
         }
 
-        // assure named entities data go first for a smooth import
-        $neMeta = new Dataset();
-        foreach ($meta->listObjects(fn(Quad $x) => $x->getObject() instanceof NamedNode && !$x->getPredicate()->equals($this->idProp)) as $i) {
-            $entityMeta = $this->entitiesDb->get($i->getValue());
+        $sortedMeta = new Dataset();
+        $objects    = $meta->listObjects(
+            function (Quad $x) {
+                $prop = $x->getPredicate();
+                return !$prop->equals($this->idProp) && $this->ontology->getProperty(null, (string) $prop)?->type === RDF::OWL_OBJECT_PROPERTY;
+            }
+        );
+        foreach ($objects as $obj) {
+            $entityMeta = $this->entitiesDb->get($obj->getValue());
             if ($entityMeta !== null) {
-                $neMeta->add($entityMeta);
+                $entityUri = $entityMeta->getNode();
+                $meta->forEach(fn(Quad $x) => $x->withObject($entityUri), new QT(object: $obj));
+                $sortedMeta->add($entityMeta);
             }
         }
-        $neMeta->add($meta);
-        return $neMeta;
+        foreach ($this->entitiesDb->getEntitiesOfClass($this->schema->classes->project) as $i) {
+            $sortedMeta->add($i);
+        }
+        foreach ($this->entitiesDb->getEntitiesOfClass($this->schema->classes->publication) as $i) {
+            $sortedMeta->add($i);
+        }
+
+        $subjects = iterator_to_array($meta->listSubjects());
+        usort($subjects, fn($a, $b) => $a->getValue() <=> $b->getValue());
+        foreach ($subjects as $sbj) {
+            $props = iterator_to_array($meta->listPredicates(new QT($sbj)));
+            usort($props, fn($a, $b) => $a->getValue() <=> $b->getValue());
+            foreach ($props as $prop) {
+                $sortedMeta->add($meta->getIterator(new QT($sbj, $prop)));
+            }
+        }
+        return $sortedMeta;
     }
 
     private function getMetadata(SplFileInfo $path): Dataset {

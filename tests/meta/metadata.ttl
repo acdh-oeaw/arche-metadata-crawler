@@ -4,7 +4,7 @@
     <http://www.w3.org/2002/07/owl#Thing>
         acdh:hasLicense <https://creativecommons.org/licenses/by-sa/4.0/> .
     acdh:Resource 
-        acdh:hasAuthor acdhi:pandorfer, acdh:mzoltak .
+        acdh:hasAuthor "Peter Andorfer", acdhi:mzoltak .
 }
 {
     <http://www.w3.org/2002/07/owl#Thing>

@@ -28,6 +28,7 @@ namespace acdhOeaw\arche\metadataCrawler;
 
 use rdfInterface\DatasetNodeInterface;
 use quickRdf\DataFactory as DF;
+use quickRdf\NamedNode;
 use termTemplates\PredicateTemplate as PT;
 use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\Schema;
@@ -81,19 +82,45 @@ class EntitiesDatabase {
             $classes = $entity->listObjects($classTmpl)->getValues();
             $labels  = $entity->listObjects($labelTmpl)->getValues();
             foreach ($classes as $class) {
+                if (!isset($this->byClass[$class])) {
+                    $this->byClass[$class] = [];
+                }
                 foreach ($labels as $label) {
-                    if (isset($this->entities[$class][$label])) {
-                        $this->log?->warning("overwritting mapping for $class and $label");
-                    }
-                    $this->entities[$class][$label] = $entity;
+                    $this->checkAndMap($entity, $label, $this->byClass[$class], "($class class mapping)");
                 }
             }
             foreach ($entity->listObjects($idTmpl)->getValues() as $id) {
-                $this->byId[$id] = $entity;
+                $this->checkAndMap($entity, $id, $this->byId, '(global mapping)');
+            }
+            foreach ($labels as $label) {
+                $this->checkAndMap($entity, $label, $this->byId, '(global mapping)');
             }
             $n++;
         }
         return $n;
+    }
+
+    /**
+     * 
+     * @param DatasetNodeInterface $entity
+     * @param string $key
+     * @param array<DatasetNodeInterface> $map
+     * @return void
+     */
+    private function checkAndMap(DatasetNodeInterface $entity, string $key,
+                                 array &$map, string $msg = ''): void {
+        $keyExists = array_key_exists($key, $map);
+        $keySet    = isset($map[$key]);
+        if (!$keyExists) {
+            $map[$key] = $entity;
+        } elseif (!$keySet) {
+            $this->log?->warning("\t\t\tduplication for key '$key' - skipping the mapping $msg");
+        } elseif ($map[$key]->getNode()->equals($entity->getNode())) {
+            $this->log?->warning("\t\t\toverwriting metadata for key '$key' $msg");
+        } else {
+            $this->log?->warning("\t\t\tduplication for key '$key' - removing the mapping $msg");
+            $map[$key] = null;
+        }
     }
 
     public function exists(string $id, string | null $class = null): bool {
@@ -110,5 +137,17 @@ class EntitiesDatabase {
             return null;
         }
         return $entity->listObjects(new PT($this->schema->id))->current();
+    }
+
+    public function getEntitiesOfClass(string $class): array {
+        return array_unique(array_filter($this->byClass[$class] ?? [], fn($x) => $x !== null), SORT_REGULAR);
+    }
+
+    /**
+     * 
+     * @return array<NamedNode>
+     */
+    public function getClasses(): array {
+        return array_map(fn($x) => DF::namedNode($x), array_keys($this->byClass));
     }
 }
