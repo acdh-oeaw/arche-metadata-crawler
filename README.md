@@ -1,12 +1,17 @@
-﻿# repo_file_checker 
+﻿# Metadata Crawler
 
-## Functionality:
+## Functionality
 
-* Generates and validates RDF metadata of a collection based on:
-  * Files structure on the disk
-  * [repo-file-checker](https://github.com/acdh-oeaw/repo-file-checker) output
-  * Metadata provided in spreadsheets and RDF files
-* Generates XLSX metadata templates based on the current ontology
+A set of scripts:
+
+* Merging metadata of a collection from inputs in [various formats](docs/metadata_formats.md)
+* Validating the merged metadata
+* Generating XLSX metadata templates based on the current ontology 
+  (see the _horizontal_ metadata files in [metadata formats description](docs/metadata_formats.md#horizontal-metadata-file))
+
+used for the metadata curation during ARCHE ingestions.
+
+## Installation
 
 ### Locally
 
@@ -21,9 +26,45 @@
 
 * Install [docker](https://www.docker.com/).
 
-# Usage
+### On repo-ingestion@hephaistos
 
-## Locally
+Nothing to be done. It is installed there already.
+
+## Usage
+
+(For a full walk-trough using repo-ingestion@hephaistos and the Wollmilchsau test collection
+please look [here](docs/walktrough.md))
+
+### On repo-ingestion@hephaistos
+
+* Generating and validaing the metadata:
+  ```bash
+  /ARCHE/vendor/metacrawler/vendor/bin/arche-crawl-meta \
+    <pathToMetadataDirectory> \
+    <outputTtlPath> \
+    <basePathOfTheCollection> \
+    <idPrefix>
+  ```
+  e.g.
+  ```bash
+  /ARCHE/vendor/metacrawler/vendor/bin/arche-crawl-meta \
+    /ARCHE/staging/GlaserDiaries_16674/metadata/input \
+    /ARCHE/staging/GlaserDiaries_16674/metadata/metadata.ttl \
+    /ARCHE/staging/GlaserDiaries_16674/data
+    https://id.acdh.oeaw.ac.at/glaserdiaries
+  ```
+* Creating metadata templates:
+  ```bash
+  /ARCHE/vendor/metacrawler/vendor/bin/arche-create-metadata-template \
+    <pathToDirectoryWhereTemplateShouldBeCreated> \
+    all
+  ```
+  e.g. to create templates in the current directory
+  ```bash
+  /ARCHE/vendor/metacrawler/vendor/bin/arche-create-metadata-template . all
+  ```
+
+### Locally
 
 * Generating and validaing the metadata:
   ```bash
@@ -35,8 +76,10 @@
   e.g.
   ```bash
   vendor/bin/arche-crawl-meta \
-    --filecheckerOutput fileList.json \
-    myCollectionDir metadata.ttl
+    metaDir \
+    metadata.ttl
+    `pwd`/data
+    https://id.acdh.oeaw.ac.at/myCollection
   ```
 * Creating metadata templates:
   ```bash
@@ -57,35 +100,9 @@ Remarks:
   vendor/bin/arche-create-metadata-template --help
   ```
 
-## On repo-ingestion@hephaistos
+### As a docker container
 
-* Generating and validaing the metadata:
-  ```bash
-  /ARCHE/vendor/metacrawler/vendor/bin/arche-crawl-meta \
-    --filecheckerOutput <pathTo_fileList.json_generatedBy_repo-filechecker> \
-    <pathToCollectionData> \
-    <pathToTargetMetadataFile>
-  ```
-  e.g.
-  ```bash
-  /ARCHE/vendor/metacrawler/vendor/bin/arche-crawl-meta \
-    --filecheckerOutput fileList.json \
-    myCollectionDir metadata.ttl
-  ```
 * Creating metadata templates:
-  ```bash
-  /ARCHE/vendor/metacrawler/vendor/bin/arche-create-metadata-template \
-    <pathToDirectoryWhereTemplateShouldBeCreated> \
-    all
-  ```
-  e.g. to create templates in the current directory
-  ```bash
-  /ARCHE/vendor/metacrawler/vendor/bin/arche-create-metadata-template . all
-  ```
-
-## As a docker container
-
-* To create metadata templates.  
   Run a container mounting directory where templates should be created under `/mnt` inside the container:
   ```bash
   docker run \
@@ -98,4 +115,3 @@ Remarks:
   docker run \
     --rm -u `id -u`:`id -g` -v `pwd`:/mnt acdhch/arche-metadata-crawler createTemplate all
   ```
-
