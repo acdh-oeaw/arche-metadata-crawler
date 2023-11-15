@@ -30,7 +30,6 @@ use Generator;
 use SplObjectStorage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\ColumnCellIterator;
 use PhpOffice\PhpSpreadsheet\Worksheet\RowCellIterator;
 use acdhOeaw\arche\lib\schema\Ontology;
@@ -42,6 +41,7 @@ use acdhOeaw\arche\lib\schema\PropertyDesc;
 use acdhOeaw\arche\lib\Schema;
 use zozlak\RdfConstants as RDF;
 use Psr\Log\LoggerInterface;
+use acdhOeaw\arche\metadataCrawler\container\WorksheetConfig;
 
 /**
  * Description of EntityList
@@ -71,7 +71,7 @@ class EntityListWorksheet {
 
     /**
      * 
-     * @var array<string, _WorksheetConfig>
+     * @var array<string, WorksheetConfig>
      */
     private array $classes = [];
     private LoggerInterface | null $log     = null;
@@ -165,14 +165,14 @@ class EntityListWorksheet {
             $class                 = $classDesc->uri;
             $properties            = array_map(fn($x) => $classDesc->properties[$x], $properties);
             $this->log?->debug("\tSheet $sheetName mapped to class $class");
-            $this->classes[$class] = new _WorksheetConfig($classDesc, $sheet, $row, $properties);
+            $this->classes[$class] = new WorksheetConfig($classDesc, $sheet, $row, $properties);
         }
         if (count($this->classes) === 0) {
             $this->log?->debug("\tFailed to find a mapping for any named entities class");
         }
     }
 
-    private function loadEntities(_WorksheetConfig $cfg): array {
+    private function loadEntities(WorksheetConfig $cfg): array {
         $idProp    = (string) $this->schema->id;
         $labelProp = (string) $this->schema->label;
         $rdfType   = DF::namedNode(RDF::RDF_TYPE);
@@ -264,21 +264,5 @@ class EntityListWorksheet {
             }
         }
         return $valid;
-    }
-}
-
-class _WorksheetConfig {
-
-    /**
-     * 
-     * @param ClassDesc $class
-     * @param Worksheet $worksheet
-     * @param int $headerRow
-     * @param array<string, PropertyDesc> $propertyMap
-     */
-    public function __construct(public ClassDesc $class,
-                                public Worksheet $worksheet,
-                                public int $headerRow, public array $propertyMap) {
-        
     }
 }

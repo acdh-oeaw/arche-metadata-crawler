@@ -31,12 +31,11 @@ use Traversable;
 use Psr\Log\LoggerInterface;
 use quickRdf\DataFactory as DF;
 use quickRdf\Dataset;
-use quickRdf\NamedNode;
 use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\Schema;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use zozlak\RdfConstants as RDF;
+use acdhOeaw\arche\metadataCrawler\container\PropertyMapping;
 
 /**
  * Description of MetadataHorizontal
@@ -62,7 +61,7 @@ class MetadataHorizontal implements IteratorAggregate {
 
     /**
      * 
-     * @var array<string, array<string, int|PropertyDesc>>
+     * @var array<string, PropertyMapping>
      */
     private array $mapping;
     private int $valueColumn;
@@ -124,14 +123,10 @@ class MetadataHorizontal implements IteratorAggregate {
             }
             $property = $this->ontology->getProperty(null, $val);
             if ($property !== null) {
-                $mapping[] = [
-                    'row'         => $row,
-                    'description' => $property,
-                    'defaultLang' => $property->langTag ? $defaultLang : null,
-                ];
+                $mapping[] = new PropertyMapping($property, $property->langTag ? $defaultLang : null, row: $row);
             }
         }
-        $idMapping = array_filter($mapping, fn($x) => $x['description']->uri === $idProp);
+        $idMapping = array_filter($mapping, fn(PropertyMapping $x) => $x->propDesc->uri === $idProp);
         if (count($idMapping) === 0) {
             $this->log?->debug("\tFailed to find an id property");
             return false;
@@ -145,8 +140,8 @@ class MetadataHorizontal implements IteratorAggregate {
     private function readMetadata(Worksheet $sheet): void {
         $sbj    = null;
         $idProp = (string) $this->schema->id;
-        $idMap  = array_filter($this->mapping, fn($x) => $x['description']->uri === $idProp);
-        $idRow  = reset($idMap)['row'];
+        $idMap  = array_filter($this->mapping, fn(PropertyMapping $x) => $x->propDesc->uri === $idProp);
+        $idRow  = reset($idMap)->row;
         for ($col = $this->valueColumn; $col <= self::MAP_COL_TO; $col++) {
             $val = trim($sheet->getCell([$col, $idRow])->getValue());
             // the second condition is an exact match on the top collection
@@ -162,10 +157,10 @@ class MetadataHorizontal implements IteratorAggregate {
         $sbj = DF::namedNode($sbj);
 
         foreach ($this->mapping as $desc) {
-            $property = DF::namedNode($desc['description']->uri);
+            $property = DF::namedNode($desc->propDesc->uri);
             for ($col = $this->valueColumn; $col <= self::MAP_COL_TO; $col++) {
-                $cell  = $sheet->getCell([$col, $desc['row']]);
-                $value = $this->getValue($cell, $desc['description'], $desc['defaultLang']);
+                $cell  = $sheet->getCell([$col, $desc->row]);
+                $value = $this->getValue($cell, $desc->propDesc, $desc->defaultLang);
                 if ($value !== null) {
                     $this->meta->add(DF::quad($sbj, $property, $value));
                 }

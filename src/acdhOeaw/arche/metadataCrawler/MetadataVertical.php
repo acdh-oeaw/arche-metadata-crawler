@@ -33,12 +33,12 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\RowCellIterator;
-use zozlak\RdfConstants as RDF;
 use quickRdf\DataFactory as DF;
 use quickRdf\Dataset;
 use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\Schema;
 use acdhOeaw\arche\lib\ingest\util\FileId;
+use acdhOeaw\arche\metadataCrawler\container\PropertyMapping;
 
 /**
  * Description of MetadataVertical
@@ -62,7 +62,7 @@ class MetadataVertical implements IteratorAggregate {
 
     /**
      * 
-     * @var array<string, array<string, string|PropertyDesc>>
+     * @var array<string, PropertyMapping>
      */
     private array $mapping;
     private ?string $colPath;
@@ -124,11 +124,7 @@ class MetadataVertical implements IteratorAggregate {
                 list($v, $lang) = $this->getPropertyLang($v, $defaultLang);
                 $property = $this->ontology->getProperty(null, $v);
                 if ($property !== null) {
-                    $propMapping[] = [
-                        'column'      => $col,
-                        'description' => $property,
-                        'defaultLang' => $property->langTag ? $lang : null,
-                    ];
+                    $propMapping[] = new PropertyMapping($property, $property->langTag ? $lang : null, column: $col);
                 }
             }
             if (count($propMapping) > 0 && array_sum(array_map(fn($x) => $x !== null, $fileMapping)) === count($fileMapping)) {
@@ -170,10 +166,10 @@ class MetadataVertical implements IteratorAggregate {
                 continue;
             }
             foreach ($map as $desc) {
-                $cell  = $sheet->getCell($desc['column'] . $row);
-                $value = $this->getValue($cell, $desc['description'], $desc['defaultLang']);
+                $cell  = $sheet->getCell($desc->column . $row);
+                $value = $this->getValue($cell, $desc->propDesc, $desc->defaultLang);
                 if ($value !== null) {
-                    $this->meta->add(DF::quad($sbj, DF::namedNode($desc['description']->uri), $value));
+                    $this->meta->add(DF::quad($sbj, DF::namedNode($desc->propDesc->uri), $value));
                 }
             }
         }
