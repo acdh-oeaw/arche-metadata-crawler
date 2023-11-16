@@ -26,14 +26,10 @@
 
 namespace acdhOeaw\arche\metadataCrawler;
 
-use Generator;
-use SplFileInfo;
 use Psr\Log\LoggerInterface;
 use quickRdf\Dataset;
 use rdfInterface\DatasetInterface;
-use rdfInterface\QuadInterface;
 use quickRdf\DataFactory as DF;
-use quickRdf\Quad;
 use quickRdf\Literal;
 use quickRdf\NamedNode;
 use termTemplates\QuadTemplate as QT;
@@ -42,7 +38,6 @@ use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\schema\ClassDesc;
 use acdhOeaw\arche\lib\schema\PropertyDesc;
 use acdhOeaw\arche\lib\Schema;
-use acdhOeaw\arche\lib\ingest\util\FileId;
 use zozlak\RdfConstants as RDF;
 
 /**
@@ -126,7 +121,7 @@ class MetadataChecker {
                     $lang = (string) $value->getLang();
                     if ($lang === '') {
                         $errors[] = "value $value of property $propDesc->uri misses the language tag";
-                    } elseif (isset($langs[$lang])) {
+                    } elseif (isset($langs[$lang]) && $propDesc->max === 1) {
                         $errors[] = "value $value of property $propDesc->uri has duplicated lang tag $lang";
                     }
                     $langs[$lang] = true;
