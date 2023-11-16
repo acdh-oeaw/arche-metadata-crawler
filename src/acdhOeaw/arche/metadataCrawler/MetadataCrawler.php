@@ -107,7 +107,11 @@ class MetadataCrawler {
                     $this->log?->warning("Failed to parse " . $i->getPathname() . " in all supported formats");
                 }
             } elseif ($i->getFilename() !== self::FILECHECKER_FILE) {
-                $this->metaSecondary->add(new MetadataRdf($i->getPathname(), $this->log));
+                try {
+                    $this->metaSecondary->add(new MetadataRdf($i->getPathname(), $this->log));
+                } catch (\Exception $e) {
+                    $this->log?->warning("Failed to parse " . $i->getPathname() . " as an RDF file");
+                }
             }
         }
 

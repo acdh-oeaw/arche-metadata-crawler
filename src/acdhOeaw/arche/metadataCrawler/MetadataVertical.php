@@ -127,7 +127,7 @@ class MetadataVertical implements IteratorAggregate {
                     $propMapping[] = new PropertyMapping($property, $property->langTag ? $lang : null, column: $col);
                 }
             }
-            if (count($propMapping) > 0 && array_sum(array_map(fn($x) => $x !== null, $fileMapping)) === count($fileMapping)) {
+            if (count($propMapping) > 0 && ($fileMapping[self::COLUMN_PATH] !== null || $fileMapping[self::COLUMN_DIR] !== null && $fileMapping[self::COLUMN_FILENAME] !== null)) {
                 break;
             }
         }
