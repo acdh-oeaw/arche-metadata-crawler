@@ -193,7 +193,7 @@ class EntityListWorksheet {
             if (!empty($label) && $label !== $curLabel) {
                 if ($entity !== null && $this->checkEntity($entity, $cfg->propertyMap)) {
                     $entities[] = $entity;
-                    $this->log?->info("\t\tEntity read at row $entityRow:\n" . (string) $entity);
+                    $this->log?->debug("\t\tEntity read at row $entityRow:\n" . (string) $entity);
                 }
                 $entity    = $curLabel  = $entityRow = $sbj       = null;
                 $sbj       = $sheet->getCell($idCol . $row)->getCalculatedValue();

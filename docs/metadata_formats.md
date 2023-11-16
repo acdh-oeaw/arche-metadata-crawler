@@ -282,7 +282,7 @@ subdir/file2 - a file in the subdirectory with
   ```
   @prefix acdh:  <https://vocabs.acdh.oeaw.ac.at/schema#> .
   @prefix acdhi: <https://id.acdh.oeaw.ac.at/> .
-  @prefix owl:   <http://www.w3.org/2002/07/owl# .
+  @prefix owl:   <http://www.w3.org/2002/07/owl#> .
   owl:Thing acdh:hasMetadataCreator acdhi:sstuhec .
   ```
   will result with `acdh:hasMetadataCreator acdhi:sstuhec` to be added to all resources:
@@ -298,7 +298,7 @@ subdir/file2 - a file in the subdirectory with
   ```
   @prefix acdh:  <https://vocabs.acdh.oeaw.ac.at/schema#> .
   @prefix acdhi: <https://id.acdh.oeaw.ac.at/> .
-  @prefix owl:   <http://www.w3.org/2002/07/owl# .
+  @prefix owl:   <http://www.w3.org/2002/07/owl#> .
   {
     owl:Thing acdh:hasMetadataCreator acdhi:sstuhec .
   }
@@ -325,7 +325,7 @@ subdir/file2 - a file in the subdirectory with
   ```
   @prefix acdh:  <https://vocabs.acdh.oeaw.ac.at/schema#> .
   @prefix acdhi: <https://id.acdh.oeaw.ac.at/> .
-  @prefix owl:   <http://www.w3.org/2002/07/owl# .
+  @prefix owl:   <http://www.w3.org/2002/07/owl#> .
   {
     acdh:Resource acdh:hasMetadataCreator acdhi:sstuhec .
   }
@@ -349,7 +349,7 @@ an information on `acdh:hasMetadataCreator` have following priorities:
 ```
 @prefix acdh:  <https://vocabs.acdh.oeaw.ac.at/schema#> .
 @prefix acdhi: <https://id.acdh.oeaw.ac.at/> .
-@prefix owl:   <http://www.w3.org/2002/07/owl# .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
 {
     owl:Thing          acdh:hasMetadataCreator <priority1> .
     acdh:Resource      acdh:hasMetadataCreator <priority2> .

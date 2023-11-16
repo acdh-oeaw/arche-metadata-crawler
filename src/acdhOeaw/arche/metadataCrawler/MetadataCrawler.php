@@ -156,7 +156,7 @@ class MetadataCrawler {
 
         $dirs = [];
         foreach (json_decode(file_get_contents($path)) as $i) {
-            if (!str_starts_with($i->directory, $basePath)) {
+            if (!str_starts_with($i->directory . '/', $basePath)) {
                 $this->log?->warning("Skipping $i->directory/$i->filename because it's out of the base path ($basePath)");
                 continue;
             }

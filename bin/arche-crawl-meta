@@ -45,6 +45,7 @@ use acdhOeaw\arche\metadataCrawler\MetadataCrawlerException;
 
 $parser = new ArgumentParser();
 $parser->addArgument('--defaultLang', default: 'und');
+$parser->addArgument('--filecheckerReportDir');
 $parser->addArgument('--repositoryUrl', default: 'https://arche.acdh.oeaw.ac.at/api');
 $parser->addArgument('--logFile', default: 'php://stdout');
 $parser->addArgument('--verbose', action: ArgumentParser::ACTION_STORE_TRUE);
@@ -56,6 +57,11 @@ $parser->addArgument('idPrefix');
 $args   = $parser->parseArgs();
 
 $log = new Log($args->logFile, $args->verbose ? LogLevel::DEBUG : LogLevel::INFO);
+
+$filecheckerFile = ($args->filecheckerReportDir ?? '') . '/fileList.json';
+if (!empty($args->filecheckerReportDir) && file_exists($filecheckerFile)) {
+    copy($filecheckerFile, $args->metadataDir . '/fileList.json');
+}
 if (!file_exists($args->metadataDir . '/fileList.json')) {
     $log->error("Metadata directory $args->metadataDir doesn't contain the filechecker output (fileList.json)");
     exit(1);
