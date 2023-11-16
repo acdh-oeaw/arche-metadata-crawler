@@ -1,0 +1,49 @@
+@prefix acdh: <https://vocabs.acdh.oeaw.ac.at/schema#>.
+@prefix acdhi: <https://id.acdh.oeaw.ac.at/>.
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+
+{
+    owl:Thing
+        acdh:hasLicense <https://creativecommons.org/licenses/by/4.0> ;
+        acdh:hasMetadataCreator acdhi:sstuhec ;
+        acdh:hasDepositor acdhi:sstuhec ;
+    	acdh:hasRightsHolder acdhi:acdh;
+        acdh:hasLicensor acdhi:acdh ;
+        acdh:hasOwner acdhi:acdh ;
+        acdh:hasHosting acdhi:arche .
+
+    <https://id.acdh.oeaw.ac.at/wollmilchsau/Metadata>
+        acdh:hasCreatedStartDate  "2017-10-03" ;
+        acdh:hasContact acdhi:mdurco .
+
+    <https://id.acdh.oeaw.ac.at/wollmilchsau/3d>
+        acdh:hasCreatedStartDate  "2017-10-03" ;
+        acdh:hasContact acdhi:mtrognitz .
+
+    <https://id.acdh.oeaw.ac.at/wollmilchsau/ACDH-DepositionAgreement.docx>
+        acdh:hasCreatedStartDate  "2016-10-03" .
+
+    <https://id.acdh.oeaw.ac.at/wollmilchsau/acdhUserFlow_v4.pdf>
+        acdh:hasCreatedStartDate  "2017-11-03" .
+}
+
+<https://id.acdh.oeaw.ac.at/wollmilchsau/Metadata> {
+    owl:Thing
+        acdh:hasMetadataCreator acdhi:mtrognitz ;
+        acdh:hasDepositor acdhi:mtrognitz .
+}    
+
+<https://id.acdh.oeaw.ac.at/wollmilchsau/3d> {
+    acdh:Resource
+        acdh:hasCreatedStartDate  "1997-11-03" .
+}
+
+<https://id.acdh.oeaw.ac.at/wollmilchsau/Formats> {
+    acdh:Resource
+        acdh:hasCreatedStartDate  "2009-12-05" .
+}
+
+<https://id.acdh.oeaw.ac.at/wollmilchsau/images> {
+    acdh:Resource
+        acdh:hasCreatedStartDate  "2009-12-05" .
+}
