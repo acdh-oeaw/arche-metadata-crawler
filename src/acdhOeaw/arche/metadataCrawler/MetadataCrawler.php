@@ -174,12 +174,15 @@ class MetadataCrawler {
                 $id          = DF::namedNode($idgen->getId($iDir));
                 $this->metaPrimary->add(DF::quad($id, $typeProp, $classDict->collection));
                 $this->metaPrimary->add(DF::quad($id, $this->schema->id, $id));
+                $this->metaPrimary->add(DF::quad($id, $this->schema->parent, DF::namedNode($idgen->getId(dirname($iDir)))));
+                $this->metaPrimary->add(DF::quad($id, $this->schema->fileName, DF::literal(basename($iDir))));
                 $n++;
                 $iDir        = dirname($iDir);
             }
             $id = DF::namedNode($idgen->getId($iPath));
             $this->metaPrimary->add(DF::quad($id, $typeProp, DF::namedNode($i->class ?? $classDict->{self::FILE_DEFAULT_CLASS})));
             $this->metaPrimary->add(DF::quad($id, $this->schema->id, $id));
+            $this->metaPrimary->add(DF::quad($id, $this->schema->parent, DF::namedNode($idgen->getId(dirname($iPath)))));
             $this->metaPrimary->add(DF::quad($id, $this->schema->fileName, DF::literal($i->filename)));
             $this->metaPrimary->add(DF::quad($id, $this->schema->binarySize, DF::literal($i->size)));
             $this->metaPrimary->add(DF::quad($id, $this->schema->mime, DF::literal($i->mime)));
@@ -194,10 +197,12 @@ class MetadataCrawler {
         $graphs = iterator_to_array($this->metaSecondary->listGraphs());
         usort($graphs, fn(TermInterface $x, TermInterface $y) => -1 * ($x->getValue() <=> $y->getValue()));
 
-        $classTmpl = new PT(DF::namedNode(RDF::RDF_TYPE));
-        $idTmpl    = new PT($this->idProp);
-        $thingTmpl = new QT(DF::namedNode(RDF::OWL_THING));
-        $meta      = new Dataset();
+        $classTmpl    = new PT(DF::namedNode(RDF::RDF_TYPE));
+        $idTmpl       = new PT($this->idProp);
+        $thingTmpl    = new QT(DF::namedNode(RDF::OWL_THING));
+        $labelTmpl    = new PT($this->schema->label);
+        $filenameTmpl = new PT($this->schema->fileName);
+        $meta         = new Dataset();
         foreach ($this->metaPrimary->listSubjects() as $sbj) {
             $metaTmp = $this->metaPrimary->copy(new QT($sbj));
             $ids     = $metaTmp->listObjects($idTmpl);
@@ -228,6 +233,9 @@ class MetadataCrawler {
                         $metaTmp->add($quad->withSubject($sbj));
                     }
                 }
+            }
+            if ($metaTmp->none($labelTmpl)) {
+                $metaTmp->add($metaTmp->map(fn(Quad $x) => $x->withPredicate($this->schema->label)->withObject($x->getObject()->withLang('und')), $filenameTmpl));
             }
             $meta->add($metaTmp);
         }
