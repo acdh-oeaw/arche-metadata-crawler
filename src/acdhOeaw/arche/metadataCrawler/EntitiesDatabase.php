@@ -136,7 +136,7 @@ class EntitiesDatabase {
         if ($entity === null) {
             return null;
         }
-        return $entity->listObjects(new PT($this->schema->id))->current();
+        return $entity->getObject(new PT($this->schema->id));
     }
 
     public function getEntitiesOfClass(string $class): array {

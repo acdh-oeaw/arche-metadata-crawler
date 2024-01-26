@@ -201,7 +201,7 @@ class EntityListWorksheet {
                     $this->log?->debug("\t\tSkipping row $row because of an empty id column");
                 } else {
                     $entity    = new DatasetNode(DF::namedNode($sbj));
-                    $entity->add(DF::quad($entity->getNode(), $rdfType, DF::namedNode($cfg->class->uri)));
+                    $entity->add(DF::quadNoSubject($rdfType, DF::namedNode($cfg->class->uri)));
                     $curLabel  = $label;
                     $entityRow = $row;
                     if (isset($uniqueLabels[$label])) {
@@ -225,7 +225,7 @@ class EntityListWorksheet {
                     }
                     $uniqueIds[(string) $obj] = ($uniqueIds[(string) $obj] ?? 0) + 1;
                 }
-                $entity->add(DF::quad($entity->getNode(), $predMap[$col], $obj));
+                $entity->add(DF::quadNoSubject($predMap[$col], $obj));
             }
         }
         if ($entity !== null && self::checkEntity($entity, $cfg->propertyMap)) {
