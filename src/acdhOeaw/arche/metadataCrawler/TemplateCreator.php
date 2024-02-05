@@ -185,12 +185,12 @@ class TemplateCreator {
 
         $titleStyle = $this->getStyle('title');
         $sheet->setCellValue('A1', "Properties for $shortName (" . date('d.m.Y', time()) . ')');
-        $sheet->mergeCells('A1:G1');
-        $sheet->getStyle('A1:G1')->applyFromArray($titleStyle);
+        $sheet->mergeCells('A1:H1');
+        $sheet->getStyle('A1:H1')->applyFromArray($titleStyle);
         $sheet->getRowDimension(1)->setRowHeight($titleStyle['font']['size'] * 1.8, 'pt');
         $sheet->setCellValue('A2', 'Please see the guidelines in the "Guidelines" sheet');
-        $sheet->mergeCells('A2:G2');
-        $sheet->getStyle('A2:G2')->applyFromArray($titleStyle);
+        $sheet->mergeCells('A2:H2');
+        $sheet->getStyle('A2:H2')->applyFromArray($titleStyle);
         $sheet->getRowDimension(2)->setRowHeight($titleStyle['font']['size'] * 1.8, 'pt');
 
         $header = [
@@ -198,9 +198,10 @@ class TemplateCreator {
             'B' => ['Ordinality', 3],
             'C' => ['Description', 6],
             'D' => ['Vocabulary', 4],
-            'E' => ['Value 1', 6],
-            'F' => ['Value 2', 6],
-            'G' => ['Value 3', 6],
+            'E' => ['Example', 4],
+            'F' => ['Value 1', 6],
+            'G' => ['Value 2', 6],
+            'H' => ['Value 3', 6],
         ];
         foreach ($header as $col => $def) {
             $sheet->setCellValue($col . '4', $def[0]);
@@ -229,21 +230,28 @@ class TemplateCreator {
             }
             $sheet->getStyle("D$row")->applyFromArray($this->getStyle($style, false, true, 'left'));
 
+            if (count($prop->exampleValue) > 0) {
+                $lang = isset($prop->exampleValue['en']) ? 'en' : key($prop->exampleValue);
+                $sheet->setCellValue("E$row", $prop->exampleValue[$lang] . (!empty($lang) ? "@$lang" : ''));
+            }
+            $sheet->getStyle("E$row")->applyFromArray($this->getStyle($style, false, true, 'left'));
+
             $styleNa = $this->getStyle($style, false, true);
             if ($prop->max === 1) {
-                $sheet->getStyle("E$row")->applyFromArray($styleContent);
-                $sheet->getStyle("F$row:G$row")->applyFromArray($styleNa);
-                $valuesRange = "E$row";
+                $sheet->getStyle("F$row")->applyFromArray($styleContent);
+                $sheet->getStyle("G$row:H$row")->applyFromArray($styleNa);
+                $valuesRange = "F$row";
             } else {
-                $sheet->getStyle("E$row:G$row")->applyFromArray($styleContent);
-                $valuesRange = "E$row:N$row";
+                $sheet->getStyle("F$row:H$row")->applyFromArray($styleContent);
+                $valuesRange = "F$row:O$row";
             }
             $sheet->getStyle($valuesRange)
                 ->getProtection()
                 ->setLocked(\PhpOffice\PhpSpreadsheet\Style\Protection::PROTECTION_UNPROTECTED);
 
-            $this->processValidation($prop, $vocabularies, $sheet, $valuesRange, $vocabularySheet, []);
-            
+            $this->processValidation($prop, $vocabularies, $sheet, $valuesRange, $vocabularySheet, [
+            ]);
+
             $sheet->getRowDimension($row)->setRowHeight(self::HORIZONTAL_ROW_HEIGHT, 'cm');
         }
 
