@@ -18,8 +18,7 @@ used for the metadata curation during ARCHE ingestions.
 * Install PHP 8 and [composer](https://getcomposer.org/)
 * Run:
   ```bash
-  echo '{"minimum-stability": "dev"}' > composer.json
-  composer require acdh-oeaw/arche-metadata-crawler:dev-master
+  composer require acdh-oeaw/arche-metadata-crawler
   ```
 
 ### As a docker image
