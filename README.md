@@ -38,7 +38,7 @@ please look [here](docs/walktrough.md))
 
 * Generating and validaing the metadata:
   ```bash
-  /ARCHE/vendor/metacrawler/vendor/bin/arche-crawl-meta \
+  /ARCHE/vendor/bin/arche-crawl-meta \
     <pathToMetadataDirectory> \
     <outputTtlPath> \
     <basePathOfTheCollection> \
@@ -46,7 +46,7 @@ please look [here](docs/walktrough.md))
   ```
   e.g.
   ```bash
-  /ARCHE/vendor/metacrawler/vendor/bin/arche-crawl-meta \
+  /ARCHE/vendor/bin/arche-crawl-meta \
     /ARCHE/staging/GlaserDiaries_16674/metadata/input \
     /ARCHE/staging/GlaserDiaries_16674/metadata/metadata.ttl \
     /ARCHE/staging/GlaserDiaries_16674/data
@@ -54,13 +54,13 @@ please look [here](docs/walktrough.md))
   ```
 * Creating metadata templates:
   ```bash
-  /ARCHE/vendor/metacrawler/vendor/bin/arche-create-metadata-template \
+  /ARCHE/vendor/bin/arche-create-metadata-template \
     <pathToDirectoryWhereTemplateShouldBeCreated> \
     all
   ```
   e.g. to create templates in the current directory
   ```bash
-  /ARCHE/vendor/metacrawler/vendor/bin/arche-create-metadata-template . all
+  /ARCHE/vendor/bin/arche-create-metadata-template . all
   ```
 
 ### Locally
