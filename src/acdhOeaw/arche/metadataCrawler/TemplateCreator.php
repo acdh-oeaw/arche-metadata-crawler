@@ -402,7 +402,7 @@ class TemplateCreator {
             $this->setValidation($sheet, DataValidation::TYPE_TIME, $valuesRange, '', '', $allowBlank);
         } elseif (isset($vocabularies[$targetRange])) {
             $this->setValidation($sheet, DataValidation::TYPE_LIST, $valuesRange, "'" . self::VOCABULARY_SHEET . "'!" . $vocabularies[$targetRange], '', $allowBlank);
-        } elseif (in_array(RDF::XSD_ANY_URI, $prop->range) || $prop->type === RDF::OWL_OBJECT_PROPERTY) {
+        } elseif (in_array(RDF::XSD_ANY_URI, $prop->range)) {
             $firstCell = explode(':', $valuesRange)[0];
             $this->setValidation($sheet, DataValidation::TYPE_CUSTOM, $valuesRange, str_replace('%cell%', $firstCell, self::URL_FORMULA), '', $allowBlank);
         }
