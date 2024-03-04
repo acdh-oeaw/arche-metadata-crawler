@@ -27,6 +27,7 @@
 namespace acdhOeaw\arche\metadataCrawler;
 
 use Psr\Log\LoggerInterface;
+use GuzzleHttp\Client;
 use quickRdf\Dataset;
 use rdfInterface\DatasetInterface;
 use quickRdf\DataFactory as DF;
@@ -38,6 +39,10 @@ use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\schema\ClassDesc;
 use acdhOeaw\arche\lib\schema\PropertyDesc;
 use acdhOeaw\arche\lib\Schema;
+use acdhOeaw\UriNormalizer;
+use acdhOeaw\UriNormalizerCache;
+use acdhOeaw\UriNormalizerException;
+use acdhOeaw\UriNormRules;
 use zozlak\RdfConstants as RDF;
 
 /**
@@ -50,12 +55,22 @@ class MetadataChecker {
     private Ontology $ontology;
     private Schema $schema;
     private LoggerInterface $log;
+    private array $normalizers;
 
     public function __construct(Ontology $ontology, Schema $schema,
                                 LoggerInterface | null $log = null) {
         $this->ontology = $ontology;
         $this->schema   = $schema;
         $this->log      = $log;
+
+        $client            = new Client();
+        $this->normalizers = [
+            '' => new UriNormalizer(),
+        ];
+        foreach ($schema->checkRanges as $class => $ranges) {
+            $rules = UriNormRules::getRules(array_map(fn($x) => (string) $x, iterator_to_array($ranges)));
+            $this->normalizers[$class] = new UriNormalizer($rules, '', $client);
+        }
     }
 
     /**
@@ -127,13 +142,24 @@ class MetadataChecker {
                     $langs[$lang] = true;
                 }
                 if ($propDesc->type === RDF::OWL_OBJECT_PROPERTY) {
-                    $this->checkNamedEntity($value, $errors);
+                    $this->checkNamedEntity($value, $propDesc, $errors);
                 }
             }
         }
     }
 
-    private function checkNamedEntity(NamedNode $value, array &$errors): void {
-        //TODO
+    private function checkNamedEntity(NamedNode $value, PropertyDesc $propDesc, array &$errors): void {
+        if ($propDesc->uri === (string) $this->schema->id) {
+            $norms = [$this->normalizers['']];
+        } else {
+            $norms = array_filter($this->normalizers, fn($key) => in_array($key, $propDesc->range), ARRAY_FILTER_USE_KEY);
+        }
+        foreach ($norms as $norm) {
+            try {
+                $norm->normalize($value, true);
+            } catch (UriNormalizerException $ex) {
+                $errors[] = $propDesc->uri . ' value ' . $ex->getMessage();
+            }
+        }
     }
 }
