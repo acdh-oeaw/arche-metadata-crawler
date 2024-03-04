@@ -22,7 +22,7 @@ We will use repo-ingestion@hephaistos as the runtime environment
    just on the filechecker output:
    ```bash
    mkdir -p /ARCHE/staging/testWollmilchsau/metadata/input
-   /ARCHE/vendor/metacrawler/vendor/bin/arche-crawl-meta \
+   /ARCHE/vendor/bin/arche-crawl-meta \
      --filecheckerReportDir /ARCHE/staging/testWollmilchsau/checkReports \
      /ARCHE/staging/testWollmilchsau/metadata/input \
      /ARCHE/staging/testWollmilchsau/metadata/metadata.ttl \
@@ -86,7 +86,7 @@ We will use repo-ingestion@hephaistos as the runtime environment
      into separate directories.
 4. Prepare metadata templates for the top collection, collection(s) and named entities:
    ```bash
-   /ARCHE/vendor/metacrawler/vendor/bin/arche-create-metadata-template \
+   /ARCHE/vendor/bin/arche-create-metadata-template \
      /ARCHE/staging/testWollmilchsau/metadata/input \
      all
    ```
@@ -97,7 +97,7 @@ We will use repo-ingestion@hephaistos as the runtime environment
    The sample data can be found [here](wollmilchsau)
 6. Run the metadata crawler once more:
    ```bash
-   /ARCHE/vendor/metacrawler/vendor/bin/arche-crawl-meta \
+   /ARCHE/vendor/bin/arche-crawl-meta \
      --filecheckerReportDir /ARCHE/staging/testWollmilchsau/checkReports \
      /ARCHE/staging/testWollmilchsau/metadata/input \
      /ARCHE/staging/testWollmilchsau/metadata/metadata.ttl \
