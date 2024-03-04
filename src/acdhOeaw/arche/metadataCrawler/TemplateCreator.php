@@ -49,8 +49,8 @@ class TemplateCreator {
 
     public const LOCK_PSWD             = 'ARCHE';
     private const HORIZONTAL_ROW_HEIGHT = 2;
-    private const FIRST_ROW_ID_ONLY     = 8;
-    private const FIRST_ROW_OTHER       = 7;
+    private const FIRST_ROW_ID_ONLY     = 9;
+    private const FIRST_ROW_OTHER       = 8;
     private const VOCABULARY_SHEET      = 'Vocabularies';
     private const ENTRY_ROWS            = 200;
     private const SKIP_PROPERTIES       = [
@@ -341,12 +341,19 @@ class TemplateCreator {
                 $style = $prop->min > 0 ? 'header1' : ($prop->recommendedClass ? 'header2' : 'header3');
                 $col   = CellAddress::fromColumnAndRow($i + 1, $firstRow)->columnName();
 
-                $addr = $col . ($firstRow - 3);
+                $addr = $col . ($firstRow - 4);
                 $sheet->setCellValue($addr, $this->getCardinality($prop));
                 $sheet->getStyle($addr)->applyFromArray($this->getStyle($style, false, true));
 
-                $addr = $col . ($firstRow - 2);
+                $addr = $col . ($firstRow - 3);
                 $sheet->setCellValue($addr, $prop->comment['en'] ?? reset($prop->comment));
+                $sheet->getStyle($addr)->applyFromArray($this->getStyle($style, false, true, 'left'));
+
+                $addr = $col . ($firstRow - 2);
+                if (count($prop->exampleValue) > 0) {
+                    $lang = isset($prop->exampleValue['en']) ? 'en' : key($prop->exampleValue);
+                    $sheet->setCellValue($addr, $prop->exampleValue[$lang] . (!empty($lang) ? "@$lang" : ''));
+                }
                 $sheet->getStyle($addr)->applyFromArray($this->getStyle($style, false, true, 'left'));
 
                 $addr = $col . ($firstRow - 1);
@@ -361,8 +368,8 @@ class TemplateCreator {
             $style  = $this->getStyle('content', false, true);
             $height = $style['font']['size'] * 1.6;
             $sheet->getStyle("A$firstRow:$lastCol$lastRow")->applyFromArray($style);
-            $sheet->getRowDimension($firstRow - 3)->setRowHeight($height, 'pt');
-            $sheet->getRowDimension($firstRow - 2)->setRowHeight(300, 'pt');
+            $sheet->getRowDimension($firstRow - 4)->setRowHeight($height, 'pt');
+            $sheet->getRowDimension($firstRow - 3)->setRowHeight(300, 'pt');
             for ($i = $firstRow - 1; $i <= $lastRow; $i++) {
                 $sheet->getRowDimension($i)->setRowHeight($height, 'pt');
             }
