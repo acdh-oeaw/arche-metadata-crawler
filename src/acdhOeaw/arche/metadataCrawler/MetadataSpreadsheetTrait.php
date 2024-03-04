@@ -50,9 +50,9 @@ trait MetadataSpreadsheetTrait {
         }
         if ($propDesc->type === RDF::OWL_DATATYPE_PROPERTY) {
             if (in_array(RDF::XSD_DATE, $propDesc->range)) {
-                return DF::literal(Date::excelToDateTimeObject($value)->format('Y-m-d'), null, RDF::XSD_DATE);
+                return DF::literal(Date::excelToDateTimeObject((float) $value)->format('Y-m-d'), null, RDF::XSD_DATE);
             } elseif (in_array(RDF::XSD_DATE_TIME, $propDesc->range)) {
-                return DF::literal(Date::excelToDateTimeObject($value)->format(DateTime::ISO8601), null, RDF::XSD_DATE_TIME);
+                return DF::literal(Date::excelToDateTimeObject((float) $value)->format(DateTime::ISO8601), null, RDF::XSD_DATE_TIME);
             } elseif ($propDesc->type === RDF::OWL_DATATYPE_PROPERTY) {
                 $lang  = $defaultLang;
                 $value = explode('@', $value);
