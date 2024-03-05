@@ -4,7 +4,7 @@
 
 {
     owl:Thing
-        acdh:hasLicense <https://creativecommons.org/licenses/by/4.0> ;
+        acdh:hasLicense <https://creativecommons.org/licenses/by/4.0/> ;
         acdh:hasMetadataCreator acdhi:sstuhec ;
         acdh:hasDepositor acdhi:sstuhec ;
     	acdh:hasRightsHolder acdhi:acdh;

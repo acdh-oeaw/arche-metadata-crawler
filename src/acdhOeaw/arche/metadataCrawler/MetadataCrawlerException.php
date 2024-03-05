@@ -37,7 +37,7 @@ use Throwable;
 class MetadataCrawlerException extends Exception {
 
     public function __construct(string $message = "", int $code = 1,
-                                ?Throwable $previous = null): Exception {
+                                ?Throwable $previous = null) {
         return parent::__construct($message, $code, $previous);
     }
 }

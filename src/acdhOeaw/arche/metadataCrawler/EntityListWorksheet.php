@@ -74,7 +74,7 @@ class EntityListWorksheet {
      * @var array<string, WorksheetConfig>
      */
     private array $classes = [];
-    private LoggerInterface | null $log     = null;
+    private LoggerInterface | null $log = null;
 
     public function __construct(string $path, Ontology $ontology,
                                 Schema $schema, string $defaultLang,
@@ -183,6 +183,7 @@ class EntityListWorksheet {
         $predMap  = array_map(fn(PropertyDesc $x) => DF::namedNode($x->uri), $cfg->propertyMap);
 
         $this->log?->info("\tReading entities of class " . $cfg->class->uri);
+        $this->mapReferenceCols($cfg);
         $highestDataRow = $sheet->getHighestDataRow();
         $entity         = $curLabel       = $entityRow      = null;
         $uniqueIds      = [];

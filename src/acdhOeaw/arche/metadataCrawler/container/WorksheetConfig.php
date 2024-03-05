@@ -28,6 +28,7 @@ namespace acdhOeaw\arche\metadataCrawler\container;
 
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use acdhOeaw\arche\lib\schema\ClassDesc;
+use acdhOeaw\arche\lib\schema\PropertyDesc;
 
 /**
  * Description of WorksheetConfig

@@ -29,11 +29,13 @@ namespace acdhOeaw\arche\metadataCrawler;
 use DateTime;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use zozlak\RdfConstants as RDF;
 use quickRdf\DataFactory as DF;
 use quickRdf\NamedNode;
 use quickRdf\Literal;
 use acdhOeaw\arche\lib\schema\PropertyDesc;
+use acdhOeaw\arche\metadataCrawler\container\WorksheetConfig;
 
 /**
  * Description of MetadataSpreadsheetTrait
@@ -41,6 +43,15 @@ use acdhOeaw\arche\lib\schema\PropertyDesc;
  * @author zozlak
  */
 trait MetadataSpreadsheetTrait {
+
+    /**
+     * Stores value maps for cells with list-controlled values.
+     * 
+     * Needs to be recomputed with mapReferenceCols() every time you change
+     * the sheet.
+     * @var array<string, array<string, NamedNode>>
+     */
+    private array $valueMaps;
 
     private function getValue(Cell $cell, PropertyDesc $propDesc,
                               ?string $defaultLang): NamedNode | Literal | null {
@@ -62,6 +73,8 @@ trait MetadataSpreadsheetTrait {
                 $value = implode('@', $value);
                 return DF::literal($value, $lang);
             }
+        } elseif (isset($this->valueMaps[$cell->getColumn()])) {
+            return $this->valueMaps[$cell->getColumn()][$value] ?? throw new MetadataCrawlerException("No label-id mapping for $value in cell " . $cell->getCoordinate());
         } else {
             return DF::namedNode($value);
         }
@@ -77,5 +90,32 @@ trait MetadataSpreadsheetTrait {
         $value    = explode('@', $value);
         $value[1] ??= $defaultLang;
         return $value;
+    }
+
+    private function mapReferenceCols(WorksheetConfig $cfg): void {
+        $sheet           = $cfg->worksheet;
+        $worksheet       = $sheet->getParentOrThrow();
+        $this->valueMaps = [];
+        $row             = (string) ($cfg->headerRow + 1);
+        foreach (array_keys($cfg->propertyMap) as $col) {
+            $validation = $sheet->getCell($col . $row)->getDataValidation();
+            if ($validation->getType() === DataValidation::TYPE_LIST) {
+                list($targetSheet, $targetRange) = explode('!', $validation->getFormula1());
+                $targetSheet           = $worksheet->getSheetByName($targetSheet);
+                $matches               = null;
+                preg_match('`^[$]?([A-Z]+)[$]?([0-9]+)+:[$]?[A-Z]+[$]?([0-9]+)$`', $targetRange, $matches);
+                list(, $labelCol, $startRow, $endRow) = $matches;
+                $idCol                 = $labelCol;
+                $idCol++; // works in PHP, even for multichar values (wow!)
+                $this->valueMaps[$col] = [];
+                for ($targetRow = $startRow; $targetRow < $endRow; $targetRow++) {
+                    $label = $targetSheet->getCell($labelCol . $targetRow)->getCalculatedValue();
+                    if (!empty($label)) {
+                        $id                            = $targetSheet->getCell($idCol . $targetRow)->getCalculatedValue();
+                        $this->valueMaps[$col][$label] = DF::namedNode($id);
+                    }
+                }
+            }
+        }
     }
 }

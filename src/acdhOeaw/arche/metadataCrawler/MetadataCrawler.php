@@ -40,6 +40,7 @@ use rdfHelpers\DefaultGraph;
 use termTemplates\QuadTemplate as QT;
 use termTemplates\PredicateTemplate as PT;
 use acdhOeaw\arche\lib\schema\Ontology;
+use acdhOeaw\arche\lib\schema\PropertyDesc;
 use acdhOeaw\arche\lib\Schema;
 use acdhOeaw\arche\lib\ingest\util\FileId;
 use zozlak\RdfConstants as RDF;
@@ -240,21 +241,37 @@ class MetadataCrawler {
             $meta->add($metaTmp);
         }
 
+        $this->mapVocabularies($meta);
+
         $sortedMeta = new Dataset();
-        $objects    = $meta->listObjects(
+        // add projects and publications to $meta so all object triple values are mapped
+        foreach ($this->entitiesDb->getEntitiesOfClass($this->schema->classes->project) as $i) {
+            $meta->add($i);
+        }
+        foreach ($this->entitiesDb->getEntitiesOfClass($this->schema->classes->publication) as $i) {
+            $meta->add($i);
+        }
+        $objects = $meta->listObjects(
             function (Quad $x) {
-                $prop = $x->getPredicate();
-                return !$prop->equals($this->idProp) && $this->ontology->getProperty(null, (string) $prop)?->type === RDF::OWL_OBJECT_PROPERTY;
+                $prop     = $x->getPredicate();
+                $propDesc = $this->ontology->getProperty(null, (string) $prop);
+                return !$prop->equals($this->idProp) && $propDesc?->type === RDF::OWL_OBJECT_PROPERTY && empty($propDesc?->vocabs);
             }
         );
         foreach ($objects as $obj) {
             $entityMeta = $this->entitiesDb->get($obj->getValue());
             if ($entityMeta !== null) {
-                $entityUri = $entityMeta->getNode();
-                $meta->forEach(fn(Quad $x) => $x->withObject($entityUri), new QT(object: $obj));
+                if (!$obj->equals($entityMeta->getNode())) {
+                    $entityUri = $entityMeta->getNode();
+                    $meta->forEach(fn(Quad $x) => $x->withObject($entityUri), new QT(object: $obj));
+                }
                 $sortedMeta->add($entityMeta);
+            } else {
+                //echo "did not find mapping for $obj\n";
             }
         }
+        // now add them to $sortedMeta so they are placed after persons/organizations/places
+        // (they will be added once again from $meta below with no effect as they will exist with $sortedMeta already)
         foreach ($this->entitiesDb->getEntitiesOfClass($this->schema->classes->project) as $i) {
             $sortedMeta->add($i);
         }
@@ -272,6 +289,36 @@ class MetadataCrawler {
             }
         }
         return $sortedMeta;
+    }
+
+    /**
+     * Custom implementation because Ontology::getVocabularyValue()
+     * has no caching.
+     * 
+     * @param Dataset $meta
+     * @param Quad $x
+     * @return void
+     */
+    private function mapVocabularies(Dataset $meta): void {
+        foreach ($this->ontology->getProperties() as $propDesc) {
+            /* @var $propDesc PropertyDesc */
+            if (!empty($propDesc->vocabs)) {
+                $values = [];
+                foreach ($propDesc->vocabularyValues as $concept) {
+                    foreach ($concept->concept as $id) {
+                        $values[$id] = $concept->uri;
+                    }
+                    foreach ($concept->label as $id) {
+                        $values[$id] = $concept->uri;
+                    }
+                    foreach ($concept->notation as $id) {
+                        $values[$id] = $concept->uri;
+                    }
+                }
+                $mapper = fn(Quad $x) => $x->withObject(DF::namedNode($values[(string) $x->getObject()] ?? $x->getObject()));
+                $meta->forEach($mapper, new PT($propDesc->uri));
+            }
+        }
     }
 
     private function getMetadata(SplFileInfo $path): Dataset {

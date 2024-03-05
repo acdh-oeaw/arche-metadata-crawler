@@ -197,8 +197,8 @@ class TemplateCreator {
             'A' => ['Property', 4.5],
             'B' => ['Ordinality', 3],
             'C' => ['Description', 6],
-            'D' => ['Vocabulary', 4],
-            'E' => ['Example', 4],
+            'D' => ['Vocabulary', 5],
+            'E' => ['Example', 5],
             'F' => ['Value 1', 6],
             'G' => ['Value 2', 6],
             'H' => ['Value 3', 6],
@@ -231,8 +231,10 @@ class TemplateCreator {
             $sheet->getStyle("D$row")->applyFromArray($this->getStyle($style, false, true, 'left'));
 
             if (count($prop->exampleValue) > 0) {
-                $lang = isset($prop->exampleValue['en']) ? 'en' : key($prop->exampleValue);
-                $sheet->setCellValue("E$row", $prop->exampleValue[$lang] . (!empty($lang) ? "@$lang" : ''));
+                $lang  = isset($prop->exampleValue['en']) ? 'en' : key($prop->exampleValue);
+                $value = $prop->exampleValue[$lang];
+                $lang  = empty($lang) || $prop->type === RDF::OWL_OBJECT_PROPERTY ? '' : '@' . $lang;
+                $sheet->setCellValue("E$row", $value . $lang);
             }
             $sheet->getStyle("E$row")->applyFromArray($this->getStyle($style, false, true, 'left'));
 
@@ -316,12 +318,12 @@ class TemplateCreator {
             $lastCol  = CellAddress::fromColumnAndRow(count($properties), 1)->columnName();
             $firstRow = $this->getFirstRow($class);
             if (in_array($class, self::ID_ONLY_CLASSES)) {
-                $addr  = 'C' . ($firstRow - 4);
+                $addr  = 'C' . ($firstRow - 5);
                 $sheet->setCellValue($addr, 'provide ONLY if hasIdentifier is empty');
-                $sheet->mergeCells($addr . ':' . $lastCol . ($firstRow - 4));
+                $sheet->mergeCells($addr . ':' . $lastCol . ($firstRow - 5));
                 $style = $this->getStyle('header2', true, true, 'left');
-                $sheet->getStyle($addr . ':' . $lastCol . ($firstRow - 4))->applyFromArray($style);
-                $sheet->getRowDimension($firstRow - 4)->setRowHeight($style['font']['size'] * 1.6, 'pt');
+                $sheet->getStyle($addr . ':' . $lastCol . ($firstRow - 5))->applyFromArray($style);
+                $sheet->getRowDimension($firstRow - 5)->setRowHeight($style['font']['size'] * 1.6, 'pt');
             }
             $lastRow = $firstRow + self::ENTRY_ROWS;
 
@@ -351,8 +353,10 @@ class TemplateCreator {
 
                 $addr = $col . ($firstRow - 2);
                 if (count($prop->exampleValue) > 0) {
-                    $lang = isset($prop->exampleValue['en']) ? 'en' : key($prop->exampleValue);
-                    $sheet->setCellValue($addr, $prop->exampleValue[$lang] . (!empty($lang) ? "@$lang" : ''));
+                    $lang  = isset($prop->exampleValue['en']) ? 'en' : key($prop->exampleValue);
+                    $value = $prop->exampleValue[$lang];
+                    $lang  = empty($lang) || $prop->type === RDF::OWL_OBJECT_PROPERTY ? '' : '@' . $lang;
+                    $sheet->setCellValue($addr, $value . $lang);
                 }
                 $sheet->getStyle($addr)->applyFromArray($this->getStyle($style, false, true, 'left'));
 
@@ -365,6 +369,7 @@ class TemplateCreator {
                 $valuesRange = $col . $firstRow . ':' . $col . $lastRow;
                 $this->processValidation($prop, $vocabularies, $sheet, $valuesRange, $vocabularySheet, $classes);
             }
+            $sheet->getRowDimension($firstRow - 2)->setRowHeight(2.1, 'cm');
             $style  = $this->getStyle('content', false, true);
             $height = $style['font']['size'] * 1.6;
             $sheet->getStyle("A$firstRow:$lastCol$lastRow")->applyFromArray($style);

@@ -35,6 +35,7 @@ use quickRdf\Literal;
 use quickRdf\NamedNode;
 use termTemplates\QuadTemplate as QT;
 use termTemplates\PredicateTemplate as PT;
+use termTemplates\NotTemplate as NT;
 use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\schema\ClassDesc;
 use acdhOeaw\arche\lib\schema\PropertyDesc;
@@ -54,8 +55,11 @@ class MetadataChecker {
 
     private Ontology $ontology;
     private Schema $schema;
-    private LoggerInterface $log;
+    private LoggerInterface | null $log;
     private array $normalizers;
+    private array $checkRanges;
+    private array $vocabularies;
+    private Dataset $meta;
 
     public function __construct(Ontology $ontology, Schema $schema,
                                 LoggerInterface | null $log = null) {
@@ -63,26 +67,37 @@ class MetadataChecker {
         $this->schema   = $schema;
         $this->log      = $log;
 
+        $this->checkRanges = [];
+        foreach ($this->schema->checkRanges ?? [] as $range => $nmsps) {
+            $this->checkRanges[$range] = array_map(fn($x) => (string) $x, iterator_to_array($nmsps));
+        }
+
         $client            = new Client();
         $this->normalizers = [
             '' => new UriNormalizer(),
         ];
         foreach ($schema->checkRanges as $class => $ranges) {
-            $rules = UriNormRules::getRules(array_map(fn($x) => (string) $x, iterator_to_array($ranges)));
+            $rules                     = UriNormRules::getRules(array_map(fn($x) => (string) $x, iterator_to_array($ranges)));
             $this->normalizers[$class] = new UriNormalizer($rules, '', $client);
+        }
+
+        foreach ($this->ontology->getProperties() as $propDesc) {
+            if (!empty($propDesc->vocabs)) {
+                $tmp = [];
+                foreach ($propDesc->vocabularyValues as $concept) {
+                    foreach ($concept->concept as $id) {
+                        $tmp[$id] = $concept->uri;
+                    }
+                }
+                $this->vocabularies[$propDesc->uri] = $tmp;
+            }
         }
     }
 
-    /**
-     * 
-     * @param iterable<QuadInterface> $metaIter
-     * @return void
-     */
-    public function check(iterable $metaIter): void {
-        $classTmpl = new PT(DF::namedNode(RDF::RDF_TYPE));
-        $meta      = new Dataset();
-        $meta->add($metaIter);
-        foreach ($meta->listSubjects() as $sbj) {
+    public function check(DatasetInterface $meta): void {
+        $this->meta = $meta;
+        $classTmpl  = new PT(DF::namedNode(RDF::RDF_TYPE));
+        foreach ($this->meta->listSubjects() as $sbj) {
             $errors = [];
 
             $sbjMeta    = $meta->copy(new QT($sbj));
@@ -96,7 +111,7 @@ class MetadataChecker {
             }
 
             if (count($errors) > 0) {
-                $this->log->error("$sbj errors: \n" . print_r($errors, true));
+                $this->log?->error("$sbj errors: \n" . print_r($errors, true));
             }
         }
     }
@@ -141,14 +156,21 @@ class MetadataChecker {
                     }
                     $langs[$lang] = true;
                 }
-                if ($propDesc->type === RDF::OWL_OBJECT_PROPERTY) {
-                    $this->checkNamedEntity($value, $propDesc, $errors);
+                if ($propDesc->uri === $this->schema->id) {
+                    $this->checkNamedEntity($value, false, $propDesc, $errors);
+                } elseif (!empty($propDesc->vocabs)) {
+                    if (!isset($this->vocabularies[$propDesc->uri][(string) $value])) {
+                        $errors[] = "$propDesc->uri value $value does not match the controlled vocabulary";
+                    }
+                } elseif (count(array_intersect($propDesc->range, array_keys($this->checkRanges))) > 0) {
+                    $this->checkNamedEntity($value, true, $propDesc, $errors);
                 }
             }
         }
     }
 
-    private function checkNamedEntity(NamedNode $value, PropertyDesc $propDesc, array &$errors): void {
+    private function checkNamedEntity(NamedNode $value, bool $resolve,
+                                      PropertyDesc $propDesc, array &$errors): void {
         if ($propDesc->uri === (string) $this->schema->id) {
             $norms = [$this->normalizers['']];
         } else {
@@ -156,7 +178,18 @@ class MetadataChecker {
         }
         foreach ($norms as $norm) {
             try {
-                $norm->normalize($value, true);
+                $value = $norm->normalize($value, true);
+                if ($resolve) {
+                    try {
+                        $norm->resolve($value);
+                    } catch (UriNormalizerException $ex) {
+                        if ($this->meta->none(new QT($value, new NT($this->schema->id)))) {
+                            $errors[] = $propDesc->uri . ' value ' . $ex->getMessage();
+                        } else {
+                            $this->log?->debug("Could not resolve $value but it exists as a subject in the output metadata.");
+                        }
+                    }
+                }
             } catch (UriNormalizerException $ex) {
                 $errors[] = $propDesc->uri . ' value ' . $ex->getMessage();
             }
