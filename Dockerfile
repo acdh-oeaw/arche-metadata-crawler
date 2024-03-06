@@ -4,9 +4,12 @@ RUN curl -sSLf -o /usr/local/bin/install-php-extensions https://github.com/mloca
     mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" &&\
     sed -i -e 's/^memory_limit.*/memory_limit = -1/g' $PHP_INI_DIR/php.ini &&\
     apt update &&\
-    install-php-extensions @composer ctype dom fileinfo gd iconv libxml mbstring simplexml xml xmlwriter zip zlib
+    install-php-extensions @composer ctype dom fileinfo gd iconv intl libxml mbstring simplexml xml xmlwriter zip zlib bz2 phar yaml
 COPY . /opt/metacrawler
 RUN cd /opt/metacrawler &&\
-    composer update -o --no-dev
+    composer require acdh-oeaw/repo-file-checker &&\
+    composer update -o --no-dev &&\
+    ln -s ../../bin/arche-crawl-meta vendor/bin/arche-crawl-meta &&\
+    ln -s ../../bin/arche-create-metadata-template vendor/bin/arche-create-metadata-template
 ENTRYPOINT ["/opt/metacrawler/dockerinit.sh"]
 
