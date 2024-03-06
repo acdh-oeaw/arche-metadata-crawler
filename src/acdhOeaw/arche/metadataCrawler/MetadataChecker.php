@@ -36,6 +36,7 @@ use quickRdf\NamedNode;
 use termTemplates\QuadTemplate as QT;
 use termTemplates\PredicateTemplate as PT;
 use termTemplates\NotTemplate as NT;
+use termTemplates\AnyOfTemplate as AT;
 use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\schema\ClassDesc;
 use acdhOeaw\arche\lib\schema\PropertyDesc;
@@ -171,6 +172,9 @@ class MetadataChecker {
 
     private function checkNamedEntity(NamedNode $value, bool $resolve,
                                       PropertyDesc $propDesc, array &$errors): void {
+        static $tmpl = null;
+        $tmpl        ??= new QT(null, new NT(new AT([$this->schema->id, $this->schema->label,
+                    DF::namedNode(RDF::RDF_TYPE)])));
         if ($propDesc->uri === (string) $this->schema->id) {
             $norms = [$this->normalizers['']];
         } else {
@@ -183,7 +187,7 @@ class MetadataChecker {
                     try {
                         $norm->resolve($value);
                     } catch (UriNormalizerException $ex) {
-                        if ($this->meta->none(new QT($value, new NT($this->schema->id)))) {
+                        if ($this->meta->none($tmpl->withSubject($value))) {
                             $errors[] = $propDesc->uri . ' value ' . $ex->getMessage();
                         } else {
                             $this->log?->debug("Could not resolve $value but it exists as a subject in the output metadata.");
