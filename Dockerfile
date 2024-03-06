@@ -10,6 +10,7 @@ RUN cd /opt/metacrawler &&\
     composer require acdh-oeaw/repo-file-checker &&\
     composer update -o --no-dev &&\
     ln -s ../../bin/arche-crawl-meta vendor/bin/arche-crawl-meta &&\
-    ln -s ../../bin/arche-create-metadata-template vendor/bin/arche-create-metadata-template
+    ln -s ../../bin/arche-create-metadata-template vendor/bin/arche-create-metadata-template &&\
+    chmod 777 /opt/metacrawler/vendor/acdh-oeaw/repo-file-checker/aux
 ENTRYPOINT ["/opt/metacrawler/dockerinit.sh"]
 
