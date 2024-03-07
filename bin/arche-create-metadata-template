@@ -39,7 +39,7 @@ use zozlak\argparse\ArgumentParser;
 use acdhOeaw\arche\metadataCrawler\TemplateCreator;
 
 $parser = new ArgumentParser();
-$parser->addArgument('--repositoryUrl', default: 'https://arche.acdh.oeaw.ac.at/api');
+$parser->addArgument('--repositoryUrl', default: 'https://arche.acdh.oeaw.ac.at/api/');
 $parser->addArgument('--guidelines', default: "foo\nbar a very long line lets see if it works\nbaz");
 $parser->addArgument('--logFile', default: 'php://stdout');
 $parser->addArgument('--verbose', action: ArgumentParser::ACTION_STORE_TRUE);

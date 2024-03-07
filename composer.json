@@ -26,6 +26,7 @@
     },
     "bin": [
         "bin/arche-create-metadata-template",
+        "bin/arche-check-meta",
         "bin/arche-crawl-meta"
       ],
     "require-dev": {

@@ -4,7 +4,7 @@
 /*
  * The MIT License
  *
- * Copyright 2023 zozlak.
+ * Copyright 2024 zozlak.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,63 +35,46 @@ use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\Repo;
 use zozlak\logging\Log;
 use Psr\Log\LogLevel;
-use zozlak\RdfConstants as RDF;
+use quickRdf\Dataset;
+use quickRdf\DataFactory;
 use zozlak\argparse\ArgumentParser;
-use quickRdf\RdfNamespace;
 use quickRdfIo\Util as RdfIoUtil;
-use acdhOeaw\arche\metadataCrawler\MetadataCrawler;
 use acdhOeaw\arche\metadataCrawler\MetadataChecker;
 use acdhOeaw\arche\metadataCrawler\MetadataCrawlerException;
 
 $parser = new ArgumentParser();
-$parser->addArgument('--defaultLang', default: 'und');
-$parser->addArgument('--filecheckerReportDir');
 $parser->addArgument('--repositoryUrl', default: 'https://arche.acdh.oeaw.ac.at/api/');
 $parser->addArgument('--logFile', default: 'php://stdout');
 $parser->addArgument('--verbose', action: ArgumentParser::ACTION_STORE_TRUE);
 $parser->addArgument('--tmpDir', default: '/tmp');
-$parser->addArgument('metadataDir');
-$parser->addArgument('outputFile');
-$parser->addArgument('dataDir');
-$parser->addArgument('idPrefix');
+$parser->addArgument('metadataFile');
 $args   = $parser->parseArgs();
 
 $log = new Log($args->logFile, $args->verbose ? LogLevel::DEBUG : LogLevel::INFO);
 
-$filecheckerFile = ($args->filecheckerReportDir ?? '') . '/fileList.json';
-if (!empty($args->filecheckerReportDir) && file_exists($filecheckerFile)) {
-    copy($filecheckerFile, $args->metadataDir . '/fileList.json');
-}
-if (!file_exists($args->metadataDir . '/fileList.json')) {
-    $log->error("Metadata directory $args->metadataDir doesn't contain the filechecker output (fileList.json)");
+if (!file_exists($args->metadataFile)) {
+    $log->error("metadata file doesn't exist");
     exit(1);
 }
 
+$log->info("----------------------------------------");
+$log->info("Reading ontology");
+$log->info("----------------------------------------");
 $repo     = Repo::factoryFromUrl($args->repositoryUrl);
 $ontology = Ontology::factoryRest($args->repositoryUrl, $args->tmpDir . '/ontology.cache', 36000);
 
 try {
     $log->info("----------------------------------------");
-    $log->info("Reading and merging metadata");
+    $log->info("Reading metadata");
     $log->info("----------------------------------------");
-    $crawler = new MetadataCrawler($args->metadataDir, $ontology, $repo->getSchema(), $args->idPrefix, $args->dataDir, $args->defaultLang, $log);
-    $meta    = $crawler->crawl();
+    $meta = new Dataset();
+    $meta->add(RdfIoUtil::parse($args->metadataFile, new DataFactory()));
 
     $log->info("----------------------------------------");
-    $log->info("Checking merged metadata");
+    $log->info("Checking metadata");
     $log->info("----------------------------------------");
     $checker = new MetadataChecker($ontology, $repo->getSchema(), $log);
     $checker->check($meta);
-
-    $log->info("----------------------------------------");
-    $log->info("Saving the output");
-    $log->info("----------------------------------------");
-    $nmsp = new RdfNamespace();
-    $nmsp->add('https://vocabs.acdh.oeaw.ac.at/schema#', 'acdh');
-    $nmsp->add('https://id.acdh.oeaw.ac.at/', 'acdhi');
-    $nmsp->add(RDF::NMSP_RDF, 'rdf');
-    RdfIoUtil::serialize($meta, 'text/turtle', $args->outputFile, $nmsp);
-    $log->info("Output written to " . realpath($args->outputFile));
 } catch (MetadataCrawlerException $e) {
     $log->error($e->getMessage());
     exit($e->getCode());
