@@ -37,6 +37,7 @@ use zozlak\logging\Log;
 use Psr\Log\LogLevel;
 use zozlak\RdfConstants as RDF;
 use zozlak\argparse\ArgumentParser;
+use rdfInterface\QuadInterface;
 use quickRdf\RdfNamespace;
 use quickRdfIo\Util as RdfIoUtil;
 use acdhOeaw\arche\metadataCrawler\MetadataCrawler;
@@ -46,6 +47,7 @@ use acdhOeaw\arche\metadataCrawler\MetadataCrawlerException;
 $parser = new ArgumentParser();
 $parser->addArgument('--defaultLang', default: 'und');
 $parser->addArgument('--filecheckerReportDir');
+$parser->addArgument('--noCheck', action: ArgumentParser::ACTION_STORE_TRUE);
 $parser->addArgument('--repositoryUrl', default: 'https://arche.acdh.oeaw.ac.at/api/');
 $parser->addArgument('--logFile', default: 'php://stdout');
 $parser->addArgument('--verbose', action: ArgumentParser::ACTION_STORE_TRUE);
@@ -77,11 +79,16 @@ try {
     $crawler = new MetadataCrawler($args->metadataDir, $ontology, $repo->getSchema(), $args->idPrefix, $args->dataDir, $args->defaultLang, $log);
     $meta    = $crawler->crawl();
 
-    $log->info("----------------------------------------");
-    $log->info("Checking merged metadata");
-    $log->info("----------------------------------------");
-    $checker = new MetadataChecker($ontology, $repo->getSchema(), $log);
-    $checker->check($meta);
+    // skip graph
+    $meta->forEach(fn(QuadInterface $q) => $q->withGraph(null));
+
+    if (!$args->noCheck) {
+        $log->info("----------------------------------------");
+        $log->info("Checking merged metadata");
+        $log->info("----------------------------------------");
+        $checker = new MetadataChecker($ontology, $repo->getSchema(), $log);
+        $checker->check($meta);
+    }
 
     $log->info("----------------------------------------");
     $log->info("Saving the output");

@@ -269,6 +269,8 @@ class MetadataCrawler {
             } else {
                 //echo "did not find mapping for $obj\n";
             }
+            // any other entity meta collected from RDF files
+            $sortedMeta->add($this->metaSecondary->getIterator(new QT($obj)));
         }
         // now add them to $sortedMeta so they are placed after persons/organizations/places
         // (they will be added once again from $meta below with no effect as they will exist with $sortedMeta already)
