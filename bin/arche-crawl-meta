@@ -80,7 +80,7 @@ try {
     $meta    = $crawler->crawl();
 
     // skip graph
-    $meta->forEach(fn(QuadInterface $q) => $q->withGraph(null));
+    $meta = $meta->map(fn(QuadInterface $q) => $q->withGraph(null));
 
     $noErrors = true;
     if (!$args->noCheck) {
