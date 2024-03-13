@@ -82,12 +82,13 @@ try {
     // skip graph
     $meta->forEach(fn(QuadInterface $q) => $q->withGraph(null));
 
+    $noErrors = true;
     if (!$args->noCheck) {
         $log->info("----------------------------------------");
         $log->info("Checking merged metadata");
         $log->info("----------------------------------------");
-        $checker = new MetadataChecker($ontology, $repo->getSchema(), $log);
-        $checker->check($meta);
+        $checker  = new MetadataChecker($ontology, $repo->getSchema(), $log);
+        $noErrors = $checker->check($meta);
     }
 
     $log->info("----------------------------------------");
@@ -99,6 +100,8 @@ try {
     $nmsp->add(RDF::NMSP_RDF, 'rdf');
     RdfIoUtil::serialize($meta, 'text/turtle', $args->outputFile, $nmsp);
     $log->info("Output written to " . realpath($args->outputFile));
+    
+    exit($noErrors ? 0 : 2);
 } catch (MetadataCrawlerException $e) {
     $log->error($e->getMessage());
     exit($e->getCode());

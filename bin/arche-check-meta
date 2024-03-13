@@ -73,8 +73,10 @@ try {
     $log->info("----------------------------------------");
     $log->info("Checking metadata");
     $log->info("----------------------------------------");
-    $checker = new MetadataChecker($ontology, $repo->getSchema(), $log);
-    $checker->check($meta);
+    $checker  = new MetadataChecker($ontology, $repo->getSchema(), $log);
+    $noErrors = $checker->check($meta);
+
+    exit($noErrors ? 0 : 2);
 } catch (MetadataCrawlerException $e) {
     $log->error($e->getMessage());
     exit($e->getCode());

@@ -95,9 +95,10 @@ class MetadataChecker {
         }
     }
 
-    public function check(DatasetInterface $meta): void {
+    public function check(DatasetInterface $meta): bool {
         $this->meta = $meta;
         $classTmpl  = new PT(DF::namedNode(RDF::RDF_TYPE));
+        $noErrors   = true;
         foreach ($this->meta->listSubjects() as $sbj) {
             $errors = [];
 
@@ -112,9 +113,11 @@ class MetadataChecker {
             }
 
             if (count($errors) > 0) {
+                $noErrors = false;
                 $this->log?->error("$sbj errors: \n" . print_r($errors, true));
             }
         }
+        return $noErrors;
     }
 
     public function checkClass(DatasetInterface $sbjMeta,
@@ -188,7 +191,7 @@ class MetadataChecker {
                         $norm->resolve($value);
                     } catch (UriNormalizerException $ex) {
                         if ($this->meta->none($tmpl->withSubject($value))) {
-                            $errors[] = $propDesc->uri . ' value ' . $ex->getMessage();
+                            $errors[] = $propDesc->uri . ' value ' . $value . ': ' . $ex->getMessage();
                         } else {
                             $this->log?->debug("Could not resolve $value but it exists as a subject in the output metadata.");
                         }
