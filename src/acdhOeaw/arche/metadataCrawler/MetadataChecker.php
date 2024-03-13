@@ -106,10 +106,13 @@ class MetadataChecker {
             $sbjClasses = $sbjMeta->listObjects($classTmpl)->getValues();
             if (count($sbjClasses) === 0) {
                 $errors[] = "rdf:type property missing";
-            }
-            foreach ($sbjClasses as $class) {
-                $classDesc = $this->ontology->getClass($class);
-                $this->checkClass($sbjMeta, $classDesc, $errors);
+            } elseif (count($sbjClasses) > 1) {
+                $errors[] = "multiple rdf:types: " . implode(', ', $sbjClasses);
+            } else {
+                foreach ($sbjClasses as $class) {
+                    $classDesc = $this->ontology->getClass($class);
+                    $this->checkClass($sbjMeta, $classDesc, $errors);
+                }
             }
 
             if (count($errors) > 0) {
