@@ -109,7 +109,7 @@ class MetadataCrawler {
                 }
             } elseif ($i->getFilename() !== self::FILECHECKER_FILE) {
                 try {
-                    $this->metaSecondary->add(new MetadataRdf($i->getPathname(), $this->log));
+                    $this->metaSecondary->add(new MetadataRdf($i->getPathname(), $this->schema->id, $this->log));
                 } catch (\Exception $e) {
                     $this->log?->warning("Failed to parse " . $i->getPathname() . " as an RDF file");
                 }
@@ -214,6 +214,7 @@ class MetadataCrawler {
                 foreach ($this->metaSecondary->getIterator(new QT($id)) as $quad) {
                     $metaTmp->add($quad);
                     $addedProps->attach($quad->getPredicate());
+                    $added = true;
                 }
             }
             foreach ($classes as $class) {

@@ -74,12 +74,13 @@ class MetadataChecker {
         }
 
         $client            = new Client();
+        $cache             = new UriNormalizerCache();
         $this->normalizers = [
-            '' => new UriNormalizer(),
+            '' => new UriNormalizer(cache: $cache),
         ];
         foreach ($schema->checkRanges as $class => $ranges) {
             $rules                     = UriNormRules::getRules(array_map(fn($x) => (string) $x, iterator_to_array($ranges)));
-            $this->normalizers[$class] = new UriNormalizer($rules, '', $client);
+            $this->normalizers[$class] = new UriNormalizer($rules, '', $client, $cache);
         }
 
         foreach ($this->ontology->getProperties() as $propDesc) {
@@ -132,7 +133,7 @@ class MetadataChecker {
         // required by class
         $missing = array_filter(
             $classDesc->getProperties(),
-            fn(PropertyDesc $x) => $x->min > 0 && !$x->automatedFill && count(array_intersect($x->property, $sbjProperties)) === 0
+            fn(PropertyDesc $x) => $x->min > 0 && !$x->automatedFill && empty($x->defaultValue) && count(array_intersect($x->property, $sbjProperties)) === 0
         );
         foreach ($missing as $i) {
             $errors[] = "required property $i->uri is missing";

@@ -29,6 +29,7 @@ namespace acdhOeaw\arche\metadataCrawler;
 use IteratorAggregate;
 use Traversable;
 use Psr\Log\LoggerInterface;
+use rdfInterface\TermInterface;
 use quickRdf\DataFactory as DF;
 use quickRdf\Dataset;
 use quickRdfIo\Util as RdfIoUtil;
@@ -44,7 +45,8 @@ class MetadataRdf implements IteratorAggregate {
     private Dataset $meta;
     private LoggerInterface | null $log;
 
-    public function __construct(string $path, LoggerInterface | null $log = null) {
+    public function __construct(string $path, TermInterface $idProp,
+                                LoggerInterface | null $log = null) {
         $this->log = $log;
 
         $this->log?->debug("Trying to map $path as an RDF file");
@@ -55,6 +57,9 @@ class MetadataRdf implements IteratorAggregate {
             $this->log?->info("\t" . count($this->meta) . " triples read");
         } catch (RdfIoException $ex) {
             $this->log?->debug("\tFailed to parse $path as and RDF file");
+        }
+        foreach ($this->meta->listSubjects() as $sbj) {
+            $this->meta->add(DF::quad($sbj, $idProp, $sbj));
         }
     }
 
