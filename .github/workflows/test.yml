@@ -14,5 +14,7 @@ jobs:
     - name: test
       run: |
         bin/arche-create-metadata-template /tmp all
-        bin/arche-crawl-meta tests/meta/ /tmp/metadata.ttl /home/zozlak/roboty/ACDH/repo/metadata-crawler/tests/data https://id.acdh.oeaw.ac.at/tests
+        RET=1
+        bin/arche-crawl-meta tests/meta/ /tmp/metadata.ttl /home/zozlak/roboty/ACDH/repo/metadata-crawler/tests/data https://id.acdh.oeaw.ac.at/tests || RET=0
+        exit $RET
 

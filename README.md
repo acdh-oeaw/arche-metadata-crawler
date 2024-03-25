@@ -24,28 +24,28 @@ used for the metadata curation during ARCHE ingestions.
 ### As a docker image
 
 * Install [docker](https://www.docker.com/).
-* Run the `acdhch/arche-metadata-crawler` image mounting your data directory into it:
+* Run the `acdhch/repo-file-checker` image mounting your data directory into it:
   ```bash
   docker run --rm -ti --entrypoint bash -u `id -u`:`id -g` \
              -v pathToYourDataDir:/data \
-             acdhch/arche-metadata-crawler
+             acdhch/repo-file-checker
   ```
 * Run the scripts, e.g.
   ```bash
-  /opt/metacrawler/vendor/bin/arche-create-metadata-template /data al
+  /opt/vendor/bin/arche-create-metadata-template /data al
   ```
   and
   ```
-  /opt/metacrawler/vendor/bin/arche-crawl-meta \
+  /opt/vendor/bin/arche-crawl-meta \
     /data/metadata \
     /data/merged.ttl \
     /ARCHE/staging/GlaserDiaries_16674/data \
     https://id.acdh.oeaw.ac.at/glaserdiaries
   ```
   * if you need the [file-checker](https://github.com/acdh-oeaw/repo-file-checker),
-    it is available under `/opt/metacrawler/vendor/bin/arche-filechecker`
+    it is available under `/opt/vendor/bin/arche-filechecker`
 
-### On repo-ingestion@hephaistos
+### On ACDH Cluster
 
 Nothing to be done. It is installed there already.
 
@@ -54,9 +54,17 @@ Nothing to be done. It is installed there already.
 (For a full walk-trough using repo-ingestion@hephaistos and the Wollmilchsau test collection
 please look [here](docs/walktrough.md))
 
-### On repo-ingestion@hephaistos
+### On ACDH Cluster
 
-* Generating and validaing the metadata:
+First, get the arche-ingestion workload console by:
+
+* Opening [this link](https://rancher.acdh-dev.oeaw.ac.at/dashboard/c/c-m-6hwgqq2g/explorer/apps.deployment/arche-ingestion/arche-ingestion)
+  (if you are redirected to the login page, open the link once again after you log in)
+* Clicking on the bluish button with three vertical dots in the top-right corner of the screen and and choosing `> Execute Shell`
+
+Then:
+
+* Generate and validate the metadata:
   ```bash
   /ARCHE/vendor/bin/arche-crawl-meta \
     <pathToMetadataDirectory> \
@@ -72,7 +80,7 @@ please look [here](docs/walktrough.md))
     /ARCHE/staging/GlaserDiaries_16674/data \
     https://id.acdh.oeaw.ac.at/glaserdiaries
   ```
-* Creating metadata templates:
+* Create metadata templates:
   ```bash
   /ARCHE/vendor/bin/arche-create-metadata-template \
     <pathToDirectoryWhereTemplateShouldBeCreated> \
@@ -127,10 +135,10 @@ Remarks:
   docker run \
     --rm -u `id -u`:`id -g`\
     -v <pathToDirectoryWhereTemplateShouldBeCreated:/mnt \
-    acdhch/arche-metadata-crawler createTemplate all
+    acdhch/repo-file-checker createTemplate all
   ```
   e.g. to create the templates in the current directory
   ```bash
   docker run \
-    --rm -u `id -u`:`id -g` -v `pwd`:/mnt acdhch/arche-metadata-crawler createTemplate all
+    --rm -u `id -u`:`id -g` -v `pwd`:/mnt acdhch/repo-file-checker createTemplate all
   ```
