@@ -284,8 +284,10 @@ class MetadataCrawler {
             } else {
                 //echo "did not find mapping for $obj\n";
             }
-            // any other entity meta collected from RDF files
-            $sortedMeta->add($this->metaSecondary->getIterator(new QT($obj)));
+            // any other entity meta collected from metadata input
+            $tmpl = new QT($obj);
+            $sortedMeta->add($this->metaPrimary->getIterator($tmpl));
+            $sortedMeta->add($this->metaSecondary->getIterator($tmpl));
         }
         // now add them to $sortedMeta so they are placed after persons/organizations/places
         // (they will be added once again from $meta below with no effect as they will exist with $sortedMeta already)
@@ -336,28 +338,5 @@ class MetadataCrawler {
                 $meta->forEach($mapper, new PT($propDesc->uri));
             }
         }
-    }
-
-    private function getMetadata(SplFileInfo $path): Dataset {
-        $sbj       = DF::namedNode($this->idgen->getId($path));
-        $allTmpl   = new QT(DF::namedNode(RDF::OWL_THING));
-        $fileTmpl  = new QT($sbj);
-        $classTmpl = $fileTmpl->withPredicate(DF::namedNode(RDF::RDF_TYPE));
-
-        $meta = new Dataset();
-        $meta->add(DF::quad($sbj, $this->idProp, $sbj));
-        foreach ($this->metaStack as $i) {
-            $graph = DF::namedNode("$i");
-            /* @var $i Dataset */
-            $meta->add($i->map(fn(Quad $x) => $x->withSubject($sbj)->withGraph($graph), $allTmpl));
-            $meta->add($i->map(fn(Quad $x) => $x->withGraph($graph), $fileTmpl));
-            foreach ($meta->listObjects($classTmpl) as $class) {
-                $meta->add($i->map(fn($x) => $x->withSubject($sbj)->withGraph($graph), new QT($class)));
-            }
-        }
-        if ($meta->none(new PT($this->schema->label))) {
-            $meta->add(DF::quad($sbj, $this->schema->label, DF::literal($path->getFilename(), 'und')));
-        }
-        return $meta;
     }
 }
