@@ -109,12 +109,12 @@ class MetadataVertical implements IteratorAggregate {
             foreach (new RowCellIterator($sheet, $headerRow, 'A', $colMax) as $cell) {
                 /* @var $cell Cell */
                 $col = $cell->getColumn();
-                $v   = mb_strtolower($cell->getValue());
+                $v   = mb_strtolower($cell->getCalculatedValue());
                 if (array_key_exists($v, $fileMapping)) {
                     $fileMapping[$v] = $col;
                     continue;
                 }
-                $v = $cell->getValue();
+                $v = $cell->getCalculatedValue();
                 if (empty($v)) {
                     continue;
                 }
@@ -179,10 +179,10 @@ class MetadataVertical implements IteratorAggregate {
     private function getPaths(Worksheet $sheet, int $row, string &$prevDir): string {
         $path1 = $path2 = '';
         if (isset($this->colPath)) {
-            $path1 = trim($sheet->getCell($this->colPath . $row)->getValue());
+            $path1 = trim($sheet->getCell($this->colPath . $row)->getCalculatedValue());
         }
         if (isset($this->colFilename) && isset($this->colDir)) {
-            $dir = trim((string) $sheet->getCell($this->colDir . $row)->getValue());
+            $dir = trim((string) $sheet->getCell($this->colDir . $row)->getCalculatedValue());
             if (empty($dir)) {
                 $dir = $prevDir;
             } else {
@@ -191,7 +191,7 @@ class MetadataVertical implements IteratorAggregate {
             if (!empty($dir) && substr($dir, -1) !== '/') {
                 $dir .= '/';
             }
-            $filename = trim($sheet->getCell($this->colFilename . $row)->getValue());
+            $filename = trim($sheet->getCell($this->colFilename . $row)->getCalculatedValue());
             if (!empty($filename)) {
                 $path2 = $dir . $filename;
             }

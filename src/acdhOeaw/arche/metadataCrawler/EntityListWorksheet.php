@@ -118,7 +118,7 @@ class EntityListWorksheet {
             $sheet     = $spreadsheet->getSheet($i);
             $row       = null;
             foreach (new ColumnCellIterator($sheet, 'A', 1, 20) as $cell) {
-                $value = $cell->getValue();
+                $value = $cell->getCalculatedValue();
                 if (!empty($value) && $this->ontology->getProperty(null, $value) !== null || $this->ontology->getProperty(null, $nmsp . $value) !== null) {
                     $row = $cell->getRow();
                 }
@@ -131,7 +131,7 @@ class EntityListWorksheet {
             $matchingClasses = $allClasses;
             $properties      = [];
             foreach (new RowCellIterator($sheet, $row, 'A', 'ZZ') as $cell) {
-                $value = $cell->getValue();
+                $value = $cell->getCalculatedValue();
                 if (empty($value)) {
                     break;
                 }

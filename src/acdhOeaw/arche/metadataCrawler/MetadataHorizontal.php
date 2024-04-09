@@ -143,7 +143,7 @@ class MetadataHorizontal implements IteratorAggregate {
         $idMap  = array_filter($this->mapping, fn(PropertyMapping $x) => $x->propDesc->uri === $idProp);
         $idRow  = reset($idMap)->row;
         for ($col = $this->valueColumn; $col <= self::MAP_COL_TO; $col++) {
-            $val = trim($sheet->getCell([$col, $idRow])->getValue());
+            $val = trim($sheet->getCell([$col, $idRow])->getCalculatedValue());
             // the second condition is an exact match on the top collection
             if (str_starts_with($val, $this->idPrefix) || $val === substr($this->idPrefix, 0, -1)) {
                 $sbj = $val;
