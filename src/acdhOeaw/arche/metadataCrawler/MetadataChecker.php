@@ -96,11 +96,18 @@ class MetadataChecker {
         }
     }
 
-    public function check(DatasetInterface $meta): bool {
+    public function check(DatasetInterface $meta, bool $reportProgress = true): bool {
         $this->meta = $meta;
         $classTmpl  = new PT(DF::namedNode(RDF::RDF_TYPE));
         $noErrors   = true;
-        foreach ($this->meta->listSubjects() as $sbj) {
+        $sbjs       = iterator_to_array($this->meta->listSubjects());
+        $N          = count($sbjs);
+        foreach ($sbjs as $n => $sbj) {
+            if ($reportProgress) {
+                $this->log?->info("Checking $sbj ($n/$N " . round(100 * $n / $N, 1) . "%)");
+            } else {
+                $this->log?->debug("Checking $sbj ($n/$N " . round(100 * $n / $N, 1) . "%)");
+            }
             $errors = [];
 
             $sbjMeta    = $meta->copy(new QT($sbj));

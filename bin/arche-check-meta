@@ -74,7 +74,7 @@ try {
     $log->info("Checking metadata");
     $log->info("----------------------------------------");
     $checker  = new MetadataChecker($ontology, $repo->getSchema(), $log);
-    $noErrors = $checker->check($meta);
+    $noErrors = $checker->check($meta, false);
 
     exit($noErrors ? 0 : 2);
 } catch (MetadataCrawlerException $e) {
