@@ -103,10 +103,9 @@ class MetadataChecker {
         $sbjs       = iterator_to_array($this->meta->listSubjects());
         $N          = count($sbjs);
         foreach ($sbjs as $n => $sbj) {
-            if ($reportProgress) {
-                $this->log?->info("Checking $sbj ($n/$N " . round(100 * $n / $N, 1) . "%)");
-            } else {
-                $this->log?->debug("Checking $sbj ($n/$N " . round(100 * $n / $N, 1) . "%)");
+            if ($n % 10 === 0) {
+                $msg = "Check progress: $n/$N " . round(100 * $n / $N, 1) . "%";
+                $reportProgress ? $this->log?->info($msg) : $this->log?->debug($msg);
             }
             $errors = [];
 
