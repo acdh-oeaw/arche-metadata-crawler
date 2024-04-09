@@ -74,7 +74,7 @@ class EntityListWorksheet {
      * @var array<string, WorksheetConfig>
      */
     private array $classes = [];
-    private LoggerInterface | null $log = null;
+    private LoggerInterface | null $log     = null;
 
     public function __construct(string $path, Ontology $ontology,
                                 Schema $schema, string $defaultLang,
@@ -127,6 +127,7 @@ class EntityListWorksheet {
                 continue;
             }
             // find classes matching predicates in the worksheet
+            $breakingValue   = null;
             $matchingClasses = $allClasses;
             $properties      = [];
             foreach (new RowCellIterator($sheet, $row, 'A', 'ZZ') as $cell) {
@@ -139,6 +140,9 @@ class EntityListWorksheet {
                 }
                 $properties[$cell->getColumn()] = $value;
                 $matchingClasses                = array_filter($matchingClasses, fn($x) => isset($x->properties[$value]));
+                if (count($matchingClasses) === 0) {
+                    $breakingValue = $value;
+                }
             }
             $matchingClasses = array_filter($matchingClasses, function (ClassDesc $class) use ($properties,
                                                                                                $propFilter): bool {
@@ -158,7 +162,7 @@ class EntityListWorksheet {
                 $this->log?->warning("\tSheet $sheetName matches multiple classes: " . implode(', ', array_keys($matchingClasses)));
                 continue;
             } elseif (count($matchingClasses) === 0) {
-                $this->log?->debug("\tSheet $sheetName matches no classes");
+                $this->log?->warning("\tSheet $sheetName matches no classes ($breakingValue property not matched)");
                 continue;
             }
             $classDesc             = reset($matchingClasses);
