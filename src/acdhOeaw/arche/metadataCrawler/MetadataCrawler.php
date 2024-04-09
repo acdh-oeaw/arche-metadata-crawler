@@ -32,6 +32,7 @@ use SplObjectStorage;
 use Psr\Log\LoggerInterface;
 use quickRdf\Dataset;
 use rdfInterface\DatasetInterface;
+use rdfInterface\NamedNodeInterface;
 use rdfInterface\TermInterface;
 use quickRdf\DataFactory as DF;
 use quickRdf\Quad;
@@ -116,8 +117,21 @@ class MetadataCrawler {
             }
         }
 
-        $dg = new DefaultGraph();
+        $dg         = new DefaultGraph();
         $this->metaSecondary->forEach(fn(Quad $x) => $dg->equals($x->getGraph()) ? $x->withGraph($baseGraph) : $x);
+        // map named entity labels
+        $entitiesDb = $this->entitiesDb;
+        $this->metaSecondary->forEach(function (Quad $q) use ($entitiesDb) {
+            $obj    = $q->getObject();
+            $objStr = (string) $obj;
+            if ($obj instanceof NamedNodeInterface && !str_starts_with($objStr, 'http')) {
+                $id = $entitiesDb->getId($objStr);
+                if ($id) {
+                    return $q->withObject(DF::namedNode($id));
+                }
+            }
+            return $q;
+        });
     }
 
     /**

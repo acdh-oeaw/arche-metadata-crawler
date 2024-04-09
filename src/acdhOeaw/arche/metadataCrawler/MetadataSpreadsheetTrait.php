@@ -27,6 +27,8 @@
 namespace acdhOeaw\arche\metadataCrawler;
 
 use DateTime;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
@@ -52,10 +54,12 @@ trait MetadataSpreadsheetTrait {
      * @var array<string, array<string, NamedNode>>
      */
     private array $valueMaps;
+    private bool $horizontal;
 
     private function getValue(Cell $cell, PropertyDesc $propDesc,
                               ?string $defaultLang): NamedNode | Literal | null {
-        $value = trim($cell->getCalculatedValue());
+        $coordinate = (string) ($this->horizontal ? $cell->getRow() : $cell->getColumn());
+        $value      = trim($cell->getCalculatedValue());
         if (empty($value)) {
             return null;
         }
@@ -73,8 +77,8 @@ trait MetadataSpreadsheetTrait {
                 $value = implode('@', $value);
                 return DF::literal($value, $lang);
             }
-        } elseif (isset($this->valueMaps[$cell->getColumn()])) {
-            return $this->valueMaps[$cell->getColumn()][$value] ?? throw new MetadataCrawlerException("No label-id mapping for $value in cell " . $cell->getCoordinate());
+        } elseif (isset($this->valueMaps[$coordinate])) {
+            return $this->valueMaps[$coordinate][$value] ?? throw new MetadataCrawlerException("No label-id mapping for $value in cell " . $cell->getCoordinate());
         } else {
             return DF::namedNode($value);
         }
@@ -99,21 +103,41 @@ trait MetadataSpreadsheetTrait {
         $row             = (string) ($cfg->headerRow + 1);
         foreach (array_keys($cfg->propertyMap) as $col) {
             $validation = $sheet->getCell($col . $row)->getDataValidation();
-            if ($validation->getType() === DataValidation::TYPE_LIST) {
-                list($targetSheet, $targetRange) = explode('!', $validation->getFormula1());
-                $targetSheet           = $worksheet->getSheetByName($targetSheet);
-                $matches               = null;
-                preg_match('`^[$]?([A-Z]+)[$]?([0-9]+)+:[$]?[A-Z]+[$]?([0-9]+)$`', $targetRange, $matches);
-                list(, $labelCol, $startRow, $endRow) = $matches;
-                $idCol                 = $labelCol;
-                $idCol++; // works in PHP, even for multichar values (wow!)
-                $this->valueMaps[$col] = [];
-                for ($targetRow = $startRow; $targetRow < $endRow; $targetRow++) {
-                    $label = $targetSheet->getCell($labelCol . $targetRow)->getCalculatedValue();
-                    if (!empty($label)) {
-                        $id                            = $targetSheet->getCell($idCol . $targetRow)->getCalculatedValue();
-                        $this->valueMaps[$col][$label] = DF::namedNode($id);
-                    }
+            $this->mapReferenceCells($worksheet, $validation, $col);
+        }
+    }
+
+    /**
+     * 
+     * @param array<string, PropertyMapping> $propertyMap
+     * @return void
+     */
+    private function mapReferenceRows(Worksheet $sheet, array $propertyMap,
+                                      string $valueColumn): void {
+        $worksheet = $sheet->getParentOrThrow();
+        foreach ($propertyMap as $mapping) {
+            $validation = $sheet->getCell([$valueColumn, $mapping->row])->getDataValidation();
+            $this->mapReferenceCells($worksheet, $validation, (string) $mapping->row);
+        }
+    }
+
+    private function mapReferenceCells(Spreadsheet $worksheet,
+                                       DataValidation $validation,
+                                       string $mapName): void {
+        if ($validation->getType() === DataValidation::TYPE_LIST) {
+            list($targetSheet, $targetRange) = explode('!', $validation->getFormula1());
+            $targetSheet               = $worksheet->getSheetByName($targetSheet);
+            $matches                   = null;
+            preg_match('`^[$]?([A-Z]+)[$]?([0-9]+)+:[$]?[A-Z]+[$]?([0-9]+)$`', $targetRange, $matches);
+            list(, $labelCol, $startRow, $endRow) = $matches;
+            $idCol                     = $labelCol;
+            $idCol++; // works in PHP, even for multichar values (wow!)
+            $this->valueMaps[$mapName] = [];
+            for ($targetRow = $startRow; $targetRow < $endRow; $targetRow++) {
+                $label = $targetSheet->getCell($labelCol . $targetRow)->getCalculatedValue();
+                if (!empty($label)) {
+                    $id                                = $targetSheet->getCell($idCol . $targetRow)->getCalculatedValue();
+                    $this->valueMaps[$mapName][$label] = DF::namedNode($id);
                 }
             }
         }

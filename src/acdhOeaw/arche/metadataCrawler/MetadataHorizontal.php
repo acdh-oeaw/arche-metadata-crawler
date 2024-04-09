@@ -70,17 +70,19 @@ class MetadataHorizontal implements IteratorAggregate {
                                 Schema $schema, string $idPrefix,
                                 string $defaultLang,
                                 LoggerInterface | null $log = null) {
-        $this->ontology = $ontology;
-        $this->schema   = $schema;
-        $this->idPrefix = $idPrefix;
-        $this->log      = $log;
-        $this->meta     = new Dataset();
+        $this->ontology   = $ontology;
+        $this->schema     = $schema;
+        $this->idPrefix   = $idPrefix;
+        $this->log        = $log;
+        $this->meta       = new Dataset();
+        $this->horizontal = true;
 
         $spreadsheet = IOFactory::load($path);
         $sheet       = $spreadsheet->getSheet(0);
-        $this->log?->debug("Trying to map $path as a horizontal metadata file");
+        $this->log?->info("Trying to map $path as a horizontal metadata file");
         if ($this->mapStructure($sheet, $defaultLang)) {
             $this->log?->info("Reading $path as a horizontal metadata file");
+            $this->mapReferenceRows($sheet, $this->mapping, $this->valueColumn);
             $this->readMetadata($sheet);
         }
     }

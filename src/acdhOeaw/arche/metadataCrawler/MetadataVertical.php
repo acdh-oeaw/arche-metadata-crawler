@@ -77,15 +77,16 @@ class MetadataVertical implements IteratorAggregate {
         if (substr($idPrefix, -1) !== '/') {
             $idPrefix .= '/';
         }
-        $this->ontology = $ontology;
-        $this->schema   = $schema;
-        $this->idgen    = new FileId($idPrefix);
-        $this->log      = $log;
-        $this->meta     = new Dataset();
+        $this->ontology   = $ontology;
+        $this->schema     = $schema;
+        $this->idgen      = new FileId($idPrefix);
+        $this->log        = $log;
+        $this->meta       = new Dataset();
+        $this->horizontal = false;
 
         $spreadsheet = IOFactory::load($path);
         $sheet       = $spreadsheet->getSheet(0);
-        $this->log?->debug("Trying to map $path as a vertical metadata file");
+        $this->log?->info("Trying to map $path as a vertical metadata file");
         if ($this->mapStructure($sheet, $defaultLang)) {
             $this->log?->info("Reading $path as a vertical metadata file");
             $this->readMetadata($sheet);

@@ -86,8 +86,9 @@ class EntityListWorksheet {
         $this->schema      = $schema;
         $this->defaultLang = $defaultLang;
         $this->log         = $log;
+        $this->horizontal  = false;
 
-        $this->log?->debug("Trying to map $path as an entities database");
+        $this->log?->info("Trying to map $path as an entities database");
         $this->mapWorksheets($spreadsheet, $strictness);
     }
 
