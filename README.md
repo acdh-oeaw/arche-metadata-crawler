@@ -65,21 +65,46 @@ First, get the arche-ingestion workload console by:
 Then:
 
 * Generate and validate the metadata:
-  ```bash
-  /ARCHE/vendor/bin/arche-crawl-meta \
-    <pathToMetadataDirectory> \
-    <outputTtlPath> \
-    <basePathOfTheCollection> \
-    <idPrefix>
-  ```
-  e.g.
-  ```bash
-  /ARCHE/vendor/bin/arche-crawl-meta \
-    /ARCHE/staging/GlaserDiaries_16674/metadata/input \
-    /ARCHE/staging/GlaserDiaries_16674/metadata/metadata.ttl \
-    /ARCHE/staging/GlaserDiaries_16674/data \
-    https://id.acdh.oeaw.ac.at/glaserdiaries
-  ```
+  * Open a screen session (the shell disconnects after one minute of inactivity) with
+    ```bash
+    screen
+    ```
+    * If you need to reconnect to the screen session because it was disconnected, run
+      ```bash
+      screen -rd
+      ```
+  * Run the `arche-crawl-meta` script:
+    ```bash
+    /ARCHE/vendor/bin/arche-crawl-meta \
+      <pathToMetadataDirectory> \
+     --filecheckerReportDir <pathToTheFileCheckerReportDirectory> \
+      <outputTtlPath> \
+      <basePathOfTheCollection> \
+      <idPrefix> \
+      2>&1 | tee <pathToLogFile>
+    ```
+    e.g.
+    ```bash
+    /ARCHE/vendor/bin/arche-crawl-meta \
+      /ARCHE/staging/GustavMahlerArchiv_22334/metadata \
+      --filecheckerReportDir /ARCHE/staging/GustavMahlerArchiv_22334/checkReports/2024_04_08_09_19_24 \
+      /ARCHE/staging/GustavMahlerArchiv_22334/scriptFiles/metadata.ttl \
+      /ARCHE/staging/GustavMahlerArchiv_22334/data \
+      https://id.acdh.oeaw.ac.at/GustavMahlerArchiv \
+      2>&1 | tee /ARCHE/staging/GustavMahlerArchiv_22334/scriptFiles/metadata.log
+    ```
+    * If you are want to skip the checks (which speeds up the process significantly), add the `--noCheck` parameter, e.g.
+      ```bash
+      /ARCHE/vendor/bin/arche-crawl-meta \
+        /ARCHE/staging/GustavMahlerArchiv_22334/metadata \
+        --filecheckerReportDir /ARCHE/staging/GustavMahlerArchiv_22334/checkReports/2024_04_08_09_19_24 \
+        /ARCHE/staging/GustavMahlerArchiv_22334/scriptFiles/metadata.ttl \
+        /ARCHE/staging/GustavMahlerArchiv_22334/data \
+        https://id.acdh.oeaw.ac.at/GustavMahlerArchiv \
+        --noCheck \
+        2>&1 | tee /ARCHE/staging/GustavMahlerArchiv_22334/scriptFiles/metadata.log
+
+      ```
 * Create metadata templates:
   ```bash
   /ARCHE/vendor/bin/arche-create-metadata-template \
