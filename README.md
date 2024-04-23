@@ -9,7 +9,7 @@ A set of scripts:
 * Generating XLSX metadata templates based on the current ontology 
   (see the _horizontal_ metadata files in [metadata formats description](docs/metadata_formats.md#horizontal-metadata-file))
 
-used for the metadata curation during ARCHE ingestions.
+used for the metadata curation during ARCHE ingestions. 
 
 ## Installation
 
