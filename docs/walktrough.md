@@ -2,8 +2,8 @@
 
 Let's try to go trough the whole process of the metadata creation using our _wollmilchsau_ test collection as an example.
 
-We will use repo-ingestion@hephaistos as the runtime environment
-(so for starters ssh to repo-ingestion@hephaistos and run the `./login.sh`.
+We will use repo-ingestion@acdh-cluster as the runtime environment
+(so for starters please obtain a console in the arche-ingestion@acdh-cluster - see instructions [here](https://github.com/acdh-oeaw/arche-ingest/blob/master/docs/acdh-cluster.md)).
 
 1. Put collection data into `/ARCHE/staging/testWollmilchsau`:
    ```bash

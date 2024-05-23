@@ -15,7 +15,7 @@ used for the metadata curation during ARCHE ingestions.
 
 ### Locally
 
-* Install PHP 8 and [composer](https://getcomposer.org/)
+* Install PHP and [composer](https://getcomposer.org/)
 * Run:
   ```bash
   composer require acdh-oeaw/arche-metadata-crawler
@@ -24,26 +24,26 @@ used for the metadata curation during ARCHE ingestions.
 ### As a docker image
 
 * Install [docker](https://www.docker.com/).
-* Run the `acdhch/repo-file-checker` image mounting your data directory into it:
+* Run the `acdhch/arche-ingest` image mounting your data directory into it:
   ```bash
   docker run --rm -ti --entrypoint bash -u `id -u`:`id -g` \
              -v pathToYourDataDir:/data \
-             acdhch/repo-file-checker
+             acdhch/arche-ingest
   ```
 * Run the scripts, e.g.
   ```bash
-  /opt/vendor/bin/arche-create-metadata-template /data al
+  arche-create-metadata-template /data all
   ```
   and
   ```
-  /opt/vendor/bin/arche-crawl-meta \
+  arche-crawl-meta \
     /data/metadata \
     /data/merged.ttl \
     /ARCHE/staging/GlaserDiaries_16674/data \
     https://id.acdh.oeaw.ac.at/glaserdiaries
   ```
   * if you need the [file-checker](https://github.com/acdh-oeaw/repo-file-checker),
-    it is available under `/opt/vendor/bin/arche-filechecker`
+    you can just run it with `arche-filechecker`
 
 ### On ACDH Cluster
 
@@ -51,28 +51,16 @@ Nothing to be done. It is installed there already.
 
 ## Usage
 
-(For a full walk-trough using repo-ingestion@hephaistos and the Wollmilchsau test collection
+(For a full walk-trough using arche-ingestion@acdh-cluster and the Wollmilchsau test collection
 please look [here](docs/walktrough.md))
 
 ### On ACDH Cluster
 
-First, get the arche-ingestion workload console by:
-
-* Opening [this link](https://rancher.acdh-dev.oeaw.ac.at/dashboard/c/c-m-6hwgqq2g/explorer/apps.deployment/arche-ingestion/arche-ingestion)
-  (if you are redirected to the login page, open the link once again after you log in)
-* Clicking on the bluish button with three vertical dots in the top-right corner of the screen and and choosing `> Execute Shell`
+First, get the arche-ingestion workload console as described [here](https://github.com/acdh-oeaw/arche-ingest/blob/master/docs/acdh-cluster.md)
 
 Then:
 
 * Generate and validate the metadata:
-  * Open a screen session (the shell disconnects after one minute of inactivity) with
-    ```bash
-    screen
-    ```
-    * If you need to reconnect to the screen session because it was disconnected, run
-      ```bash
-      screen -rd
-      ```
   * Run the `arche-crawl-meta` script:
     ```bash
     /ARCHE/vendor/bin/arche-crawl-meta \
@@ -121,16 +109,19 @@ Then:
 * Generating and validaing the metadata:
   ```bash
   vendor/bin/arche-crawl-meta \
-    --filecheckerOutput <pathTo_fileList.json_generatedBy_repo-filechecker> \
-    <pathToCollectionData> \
-    <pathToTargetMetadataFile>
+    --filecheckerReportDir pathToDirectoryWithFilecheckerOutput \
+    pathToInputMetadataDir \
+    mergedMetadataFilePath \
+    pathToCollectionData \
+    pathToTargetMetadataFile
   ```
   e.g.
   ```bash
   vendor/bin/arche-crawl-meta \
+    --filecheckerReportDir reports/2024_03_01_12_45_23 \
     metaDir \
-    metadata.ttl
-    `pwd`/data
+    metadata.ttl \
+    `pwd`/data \
     https://id.acdh.oeaw.ac.at/myCollection
   ```
 * Creating metadata templates:
@@ -154,16 +145,51 @@ Remarks:
 
 ### As a docker container
 
-* Creating metadata templates:
-  Run a container mounting directory where templates should be created under `/mnt` inside the container:
+* Generating and validaing the metadata:  
+  Run a container mounting directory structure inside the container 
+  and overridding the command to be run with the arche-crawl-meta:
   ```bash
   docker run \
     --rm -u `id -u`:`id -g`\
-    -v <pathToDirectoryWhereTemplateShouldBeCreated:/mnt \
-    acdhch/repo-file-checker createTemplate all
+    -v pathInHost:/mnt \
+    --entrypoint arche-crawl-meta \
+    acdhch/arche-ingest \
+    --filecheckerReportDir pathToDirectoryWithFilecheckerOutput \
+    pathToInputMetadataDir \
+    mergedMetadataFilePath \
+    pathToCollectionData \
+    pathToTargetMetadataFile
+  ```
+  e.g. to use with pahts relatively to the current working directory
+  ```bash
+  docker run \
+    --rm -u `id -u`:`id -g`\
+    -v `pwd`:/mnt \
+    --entrypoint arche-crawl-meta \
+    acdhch/arche-ingest \
+    --filecheckerReportDir /mnt/reports/2024_03_01_12_45_23 \
+    /mnt/metaDir \
+    /mnt/metadata.ttl \
+    /mnt/data \
+    https://id.acdh.oeaw.ac.at/myCollection
+  ```
+* Creating metadata templates:  
+  Run a container mounting directory where templates should be created under `/mnt` inside the container 
+  and overridding the command to be run with the arche-create-metadata-template:
+  ```bash
+  docker run \
+    --rm -u `id -u`:`id -g`\
+    -v pathToDirectoryWhereTemplateShouldBeCreated:/mnt \
+    --entrypoint arche-create-metadata-template
+    acdhch/arche-ingest \
+    /mnt all
   ```
   e.g. to create the templates in the current directory
   ```bash
   docker run \
-    --rm -u `id -u`:`id -g` -v `pwd`:/mnt acdhch/repo-file-checker createTemplate all
+    --rm -u `id -u`:`id -g` \
+    -v `pwd`:/mnt \
+    --entrypoint arche-create-metadata-template \
+    acdhch/arche-ingest \
+    /mnt all
   ```
