@@ -8,7 +8,7 @@ We will use repo-ingestion@acdh-cluster as the runtime environment
 1. Put collection data into `/ARCHE/staging/testWollmilchsau`:
    ```bash
    mkdir /ARCHE/staging/testWollmilchsau
-   cp -R /repo-userstories/wollmilchsau_9552/import_var2/data /ARCHE/staging/testWollmilchsau/data
+   cp -R /ARCHE/staging/wollmilchsau_9552/data /ARCHE/staging/testWollmilchsau/data
    ```
 2. Run the [repo-filechecker](https://github.com/acdh-oeaw/repo-file-checker) on the data
    ```bash
