@@ -201,6 +201,9 @@ class MetadataCrawler {
             $this->metaPrimary->add(DF::quad($id, $this->schema->fileName, DF::literal($i->filename)));
             $this->metaPrimary->add(DF::quad($id, $this->schema->binarySize, DF::literal($i->size)));
             $this->metaPrimary->add(DF::quad($id, $this->schema->mime, DF::literal($i->mime)));
+            if (isset($i->hasCategory)) {
+                $this->metaPrimary->add(DF::quad($id, $this->schema->category, DF::namedNode($i->hasCategory)));
+            }
             $n++;
         }
         $this->log?->info("\tData on $n files and directories imported");
