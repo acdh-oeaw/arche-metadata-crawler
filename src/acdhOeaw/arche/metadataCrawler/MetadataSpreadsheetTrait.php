@@ -125,7 +125,14 @@ trait MetadataSpreadsheetTrait {
                                        DataValidation $validation,
                                        string $mapName): void {
         if ($validation->getType() === DataValidation::TYPE_LIST) {
-            list($targetSheet, $targetRange) = explode('!', $validation->getFormula1());
+            $formula = $validation->getFormula1();
+            if (!str_contains($formula, '!')) {
+                if (isset($this->log)) {
+                    $this->log?->error("\t\tWrong data validation formula: $formula");
+                }
+                return;
+            }
+            list($targetSheet, $targetRange) = explode('!', $formula);
             $targetSheet               = $worksheet->getSheetByName($targetSheet);
             $matches                   = null;
             preg_match('`^[$]?([A-Z]+)[$]?([0-9]+)+:[$]?[A-Z]+[$]?([0-9]+)$`', $targetRange, $matches);

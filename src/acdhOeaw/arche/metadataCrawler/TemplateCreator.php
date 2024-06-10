@@ -239,13 +239,13 @@ class TemplateCreator {
             $sheet->getStyle("E$row")->applyFromArray($this->getStyle($style, false, true, 'left'));
 
             $styleNa = $this->getStyle($style, false, true);
-            if ($prop->max === 1) {
+            if ($prop->max === 1 && !in_array(RDF::RDF_LANG_STRING, $prop->range)) {
                 $sheet->getStyle("F$row")->applyFromArray($styleContent);
                 $sheet->getStyle("G$row:H$row")->applyFromArray($styleNa);
                 $valuesRange = "F$row";
             } else {
                 $sheet->getStyle("F$row:H$row")->applyFromArray($styleContent);
-                $valuesRange = "F$row:O$row";
+                $valuesRange = "F$row:Y$row";
             }
             $sheet->getStyle($valuesRange)
                 ->getProtection()
