@@ -231,7 +231,6 @@ class MetadataCrawler {
                 foreach ($this->metaSecondary->getIterator(new QT($id)) as $quad) {
                     $metaTmp->add($quad);
                     $addedProps->attach($quad->getPredicate());
-                    $added = true;
                 }
             }
             foreach ($classes as $class) {

@@ -88,7 +88,7 @@ class TemplateCreator {
             ],
             'fill'      => [
                 'fillType'   => 'solid',
-                'startColor' => ['argb' => 'FFCCCCCC'],
+                'startColor' => ['argb' => 'FFD7F3F4'],
             ],
             'alignment' => [
                 'wrapText'   => true,
@@ -104,7 +104,7 @@ class TemplateCreator {
             ],
             'fill'      => [
                 'fillType'   => 'solid',
-                'startColor' => ['argb' => 'FFDDDDDD'],
+                'startColor' => ['argb' => 'FFE1F6F7'],
             ],
             'alignment' => [
                 'wrapText'   => true,
@@ -120,7 +120,7 @@ class TemplateCreator {
             ],
             'fill'      => [
                 'fillType'   => 'solid',
-                'startColor' => ['argb' => 'FFEEEEEE'],
+                'startColor' => ['argb' => 'FFEBF9FA'],
             ],
             'alignment' => [
                 'wrapText'   => true,
