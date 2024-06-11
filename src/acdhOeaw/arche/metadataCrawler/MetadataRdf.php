@@ -58,9 +58,15 @@ class MetadataRdf implements IteratorAggregate {
         } catch (RdfIoException $ex) {
             $this->log?->debug("\tFailed to parse $path as and RDF file");
         }
-        foreach ($this->meta->listSubjects() as $sbj) {
-            $this->meta->add(DF::quad($sbj, $idProp, $sbj));
-        }
+        // Commented out as it is generating triples like
+        //   acdh:Resource ID acdh:Resource
+        // or
+        //   owl:Thing ID acdh:Resource
+        // which are very problematic.
+        // What was the use case?
+        //foreach ($this->meta->listSubjects() as $sbj) {
+        //    $this->meta->add(DF::quad($sbj, $idProp, $sbj));
+        //}
     }
 
     public function getIterator(): Traversable {
