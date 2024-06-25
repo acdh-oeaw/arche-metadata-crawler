@@ -251,8 +251,8 @@ class EntityListWorksheet {
             }
         }
 
-        if (count(array_filter($uniqueLabels, fn($x) => $x > 1)) > 0 || count(array_filter($uniqueIds, fn($x) => $x > 1)) > 0) {
-            $this->log?->info("\t\tAborting entities reading because of duplicates ids and/or titles");
+        if (count(array_filter($uniqueLabels, fn($x) => $x > 1)) > 0) {
+            $this->log?->info("\t\tAborting entities reading because of duplicated ids and/or titles");
             return [];
         }
         $this->log?->info("\t\t" . count($entities) . " entities read");
