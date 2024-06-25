@@ -33,8 +33,10 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\ColumnCellIterator;
 use PhpOffice\PhpSpreadsheet\Worksheet\RowCellIterator;
 use acdhOeaw\arche\lib\schema\Ontology;
+use quickRdf\Dataset;
 use quickRdf\DatasetNode;
 use quickRdf\DataFactory as DF;
+use quickRdf\Quad;
 use termTemplates\PredicateTemplate as PT;
 use acdhOeaw\arche\lib\schema\ClassDesc;
 use acdhOeaw\arche\lib\schema\PropertyDesc;
@@ -198,7 +200,7 @@ class EntityListWorksheet {
             $label = $sheet->getCell($labelCol . $row)->getCalculatedValue();
             if (!empty($label) && $label !== $curLabel) {
                 if ($entity !== null && $this->checkEntity($entity, $cfg->propertyMap)) {
-                    $entities[] = $entity;
+                    $entities[$curLabel] = $entity;
                     $this->log?->debug("\t\tEntity read at row $entityRow:\n" . (string) $entity);
                 }
                 $entity    = $curLabel  = $entityRow = $sbj       = null;
@@ -226,17 +228,27 @@ class EntityListWorksheet {
                     continue;
                 }
                 if ($col === $idCol) {
-                    if (isset($uniqueIds[(string) $obj])) {
-                        $this->log?->error("\t\tIdentifier $obj used more than once in row $row");
-                    }
-                    $uniqueIds[(string) $obj] = ($uniqueIds[(string) $obj] ?? 0) + 1;
+                    $uniqueIds[(string) $obj][] = $curLabel;
                 }
                 $entity->add(DF::quadNoSubject($predMap[$col], $obj));
             }
         }
         if ($entity !== null && self::checkEntity($entity, $cfg->propertyMap)) {
-            $entities[] = $entity;
+            $entities[$curLabel] = $entity;
             $this->log?->debug("\t\tEntity read at row $entityRow:\n" . (string) $entity);
+        }
+        foreach ($uniqueIds as $id => $labels) {
+            if (count($labels) > 0) {
+                $this->log?->debug("\t\tMerging " . implode(', ', $labels));
+                $merged = new Dataset();
+                foreach ($labels as $label) {
+                    $merged->add($entities[$label]);
+                }
+                foreach ($labels as $label) {
+                    $sbj = $entities[$label]->getNode();
+                    $entities[$label]->add($merged->map(fn(Quad $q) => $q->withSubject($sbj)));
+                }
+            }
         }
 
         if (count(array_filter($uniqueLabels, fn($x) => $x > 1)) > 0 || count(array_filter($uniqueIds, fn($x) => $x > 1)) > 0) {
