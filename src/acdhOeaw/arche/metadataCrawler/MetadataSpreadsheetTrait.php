@@ -128,7 +128,7 @@ trait MetadataSpreadsheetTrait {
             $formula = $validation->getFormula1();
             if (!str_contains($formula, '!')) {
                 if (isset($this->log)) {
-                    $this->log?->error("\t\tWrong data validation formula: $formula");
+                    $this->log?->error("\t\tWrong data validation formula in column $mapName: $formula");
                 }
                 return;
             }

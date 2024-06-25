@@ -90,6 +90,9 @@ try {
         $log->info("----------------------------------------");
         $checker  = new MetadataChecker($ontology, $repo->getSchema(), $log);
         $noErrors = $checker->check($meta, !$args->noCheckProgress);
+        if (!$noErrors) {
+            $log->error("Errors found! Please inspect the output above");
+        }
     }
 
     $log->info("----------------------------------------");
