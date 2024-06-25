@@ -200,8 +200,10 @@ class MetadataCrawler {
             $this->metaPrimary->add(DF::quad($id, $this->schema->parent, DF::namedNode($idgen->getId(dirname($iPath)))));
             $this->metaPrimary->add(DF::quad($id, $this->schema->fileName, DF::literal($i->filename)));
             $this->metaPrimary->add(DF::quad($id, $this->schema->binarySize, DF::literal($i->size)));
-            $this->metaPrimary->add(DF::quad($id, $this->schema->mime, DF::literal($i->mime)));
-            if (isset($i->hasCategory)) {
+            if (!empty($i->mime)) {
+                $this->metaPrimary->add(DF::quad($id, $this->schema->mime, DF::literal($i->mime)));
+            }
+            if (!empty($i->hasCategory)) {
                 $this->metaPrimary->add(DF::quad($id, $this->schema->category, DF::namedNode($i->hasCategory)));
             }
             $n++;
