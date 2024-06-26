@@ -132,6 +132,9 @@ class MetadataCrawler {
             }
             return $q;
         });
+        
+        $this->mapVocabularies($this->metaPrimary);
+        $this->mapVocabularies($this->metaSecondary);
     }
 
     /**
@@ -259,8 +262,6 @@ class MetadataCrawler {
             }
             $meta->add($metaTmp);
         }
-
-        $this->mapVocabularies($meta);
 
         $sortedMeta = new Dataset();
         // add projects and publications to $meta so all object triple values are mapped
