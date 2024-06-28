@@ -202,7 +202,8 @@ class MetadataCrawler {
             $this->metaPrimary->add(DF::quad($id, $this->schema->id, $id));
             $this->metaPrimary->add(DF::quad($id, $this->schema->parent, DF::namedNode($idgen->getId(dirname($iPath)))));
             $this->metaPrimary->add(DF::quad($id, $this->schema->fileName, DF::literal($i->filename)));
-            $this->metaPrimary->add(DF::quad($id, $this->schema->binarySize, DF::literal($i->size)));
+            // Seta asked not to map the binary size (2024-06-28)
+            //$this->metaPrimary->add(DF::quad($id, $this->schema->binarySize, DF::literal($i->size)));
             if (!empty($i->mime)) {
                 $this->metaPrimary->add(DF::quad($id, $this->schema->mime, DF::literal($i->mime)));
             }
