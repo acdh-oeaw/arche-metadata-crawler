@@ -32,6 +32,8 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use PhpOffice\PhpSpreadsheet\Calculation\Functions;
 use zozlak\RdfConstants as RDF;
 use quickRdf\DataFactory as DF;
 use quickRdf\NamedNode;
@@ -58,16 +60,53 @@ trait MetadataSpreadsheetTrait {
 
     private function getValue(Cell $cell, PropertyDesc $propDesc,
                               ?string $defaultLang): NamedNode | Literal | null {
+        static $formatGeneral = [
+            NumberFormat::FORMAT_GENERAL, NumberFormat::FORMAT_NUMBER, NumberFormat::FORMAT_TEXT
+        ];
+        static $onlyYear      = '/^-?[0-9]+$/';
+
         $coordinate = (string) ($this->horizontal ? $cell->getRow() : $cell->getColumn());
         $value      = trim($cell->getCalculatedValue());
         if (empty($value)) {
             return null;
         }
         if ($propDesc->type === RDF::OWL_DATATYPE_PROPERTY) {
-            if (in_array(RDF::XSD_DATE, $propDesc->range)) {
-                return DF::literal(Date::excelToDateTimeObject((float) $value)->format('Y-m-d'), null, RDF::XSD_DATE);
-            } elseif (in_array(RDF::XSD_DATE_TIME, $propDesc->range)) {
-                return DF::literal(Date::excelToDateTimeObject((float) $value)->format(DateTime::ISO8601), null, RDF::XSD_DATE_TIME);
+            $isDate     = in_array(RDF::XSD_DATE, $propDesc->range);
+            $isDateTime = in_array(RDF::XSD_DATE_TIME, $propDesc->range);
+            if ($isDate || $isDateTime) {
+                $format = $cell->getStyle()->getNumberFormat();
+                if (Date::isDateTimeFormat($format, true)) {
+                    // now we have a few options:
+                    // - $value is positive number - call Date::excelToDateTimeObject($value)
+                    // - $value is non-positive number - the spreadsheet was created by openoffice,
+                    //   so first call Functions::setCompatibilityMode(Functions::COMPATIBILITY_OPENOFFICE)
+                    //   and only then Date::excelToDateTimeObject($value)
+                    // - $value is not a number - try to parse it as date as it is
+                    //   (which may or may not succeed)
+                    if (is_numeric($value)) {
+                        $value                = (float) $value;
+                        $oldCompatibilityMode = Functions::getCompatibilityMode();
+                        if ($value < 1) {
+                            Functions::setCompatibilityMode(Functions::COMPATIBILITY_OPENOFFICE);
+                            echo "compatibility mode => ";
+                        }
+                        $value = Date::excelToDateTimeObject($value);
+                        Functions::setCompatibilityMode($oldCompatibilityMode);
+                    } else {
+                        $value = new DateTime($value);
+                    }
+                } elseif (preg_match($onlyYear, $value)) {
+                    $value = new DateTime($value . "-01-01");
+                } else {
+                    $value = new DateTime($value);
+                }
+            }
+
+            if ($isDate) {
+                echo $value->format('Y-m-d') . "\n";
+                return DF::literal($value->format('Y-m-d'), null, RDF::XSD_DATE);
+            } elseif ($isDateTime) {
+                return DF::literal($value->format(DateTime::ISO8601), null, RDF::XSD_DATE_TIME);
             } elseif ($propDesc->type === RDF::OWL_DATATYPE_PROPERTY) {
                 $lang  = $defaultLang;
                 $value = explode('@', $value);

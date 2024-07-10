@@ -122,6 +122,15 @@ class MetadataChecker {
                 }
             }
 
+            $tmp        = new \quickRdf\DatasetNode($sbj);
+            $doorkeeper = new \acdhOeaw\arche\doorkeeper\Resource($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, null, $this->log);
+            try {
+                $doorkeeper->runTests(\acdhOeaw\arche\doorkeeper\CheckAttribute::class);
+            } catch (\acdhOeaw\arche\doorkeeper\DoorkeeperException $e) {
+                $this->log?->error("$sbj errors: \n" . $e->getMessage());
+                $noErrors = false;
+            }
+
             if (count($errors) > 0) {
                 $noErrors = false;
                 $this->log?->error("$sbj errors: \n" . print_r($errors, true));
@@ -139,7 +148,7 @@ class MetadataChecker {
         // required by class
         $missing = array_filter(
             $classDesc->getProperties(),
-            fn(PropertyDesc $x) => $x->min > 0 && !$x->automatedFill && empty($x->defaultValue) && count(array_intersect($x->property, $sbjProperties)) === 0
+                                      fn(PropertyDesc $x) => $x->min > 0 && !$x->automatedFill && empty($x->defaultValue) && count(array_intersect($x->property, $sbjProperties)) === 0
         );
         foreach ($missing as $i) {
             $errors[] = "required property $i->uri is missing";
