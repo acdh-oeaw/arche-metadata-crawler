@@ -88,7 +88,6 @@ trait MetadataSpreadsheetTrait {
                         $oldCompatibilityMode = Functions::getCompatibilityMode();
                         if ($value < 1) {
                             Functions::setCompatibilityMode(Functions::COMPATIBILITY_OPENOFFICE);
-                            echo "compatibility mode => ";
                         }
                         $value = Date::excelToDateTimeObject($value);
                         Functions::setCompatibilityMode($oldCompatibilityMode);
@@ -103,7 +102,6 @@ trait MetadataSpreadsheetTrait {
             }
 
             if ($isDate) {
-                echo $value->format('Y-m-d') . "\n";
                 return DF::literal($value->format('Y-m-d'), null, RDF::XSD_DATE);
             } elseif ($isDateTime) {
                 return DF::literal($value->format(DateTime::ISO8601), null, RDF::XSD_DATE_TIME);
