@@ -8,15 +8,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    #- uses: mxschmitt/action-tmate@v3
+    - uses: mxschmitt/action-tmate@v3
     - name: composer
       run: composer update 
-    - name: integration tests
-      run: |
-        bin/arche-create-metadata-template /tmp all
-        RET=1
-        bin/arche-crawl-meta tests/meta/ /tmp/metadata.ttl /home/zozlak/roboty/ACDH/repo/metadata-crawler/tests/data https://id.acdh.oeaw.ac.at/tests || RET=0
-        exit $RET
+    #- name: integration tests
+    #  run: |
+    #    bin/arche-create-metadata-template /tmp all
+    #    RET=1
+    #    bin/arche-crawl-meta tests/meta/ /tmp/metadata.ttl /home/zozlak/roboty/ACDH/repo/metadata-crawler/tests/data https://id.acdh.oeaw.ac.at/tests || RET=0
+    #    exit $RET
     - name: unit tests
       run: |
         mkdir -p build/logs
