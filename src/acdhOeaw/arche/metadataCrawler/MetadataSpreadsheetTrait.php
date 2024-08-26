@@ -169,8 +169,8 @@ trait MetadataSpreadsheetTrait {
                 }
                 return;
             }
-            list($targetSheet, $targetRange) = explode('!', $formula);
-            $targetSheet               = $worksheet->getSheetByName($targetSheet);
+            list($targetSheetName, $targetRange) = explode('!', $formula);
+            $targetSheet               = $worksheet->getSheetByName($targetSheetName);
             $matches                   = null;
             preg_match('`^[$]?([A-Z]+)[$]?([0-9]+)+:[$]?[A-Z]+[$]?([0-9]+)$`', $targetRange, $matches);
             list(, $labelCol, $startRow, $endRow) = $matches;
@@ -178,10 +178,18 @@ trait MetadataSpreadsheetTrait {
             $idCol++; // works in PHP, even for multichar values (wow!)
             $this->valueMaps[$mapName] = [];
             for ($targetRow = $startRow; $targetRow < $endRow; $targetRow++) {
-                $label = $targetSheet->getCell($labelCol . $targetRow)->getCalculatedValue();
-                if (!empty($label)) {
-                    $id                                = $targetSheet->getCell($idCol . $targetRow)->getCalculatedValue();
-                    $this->valueMaps[$mapName][$label] = DF::namedNode($id);
+                try {
+                    $label = $targetSheet->getCell($labelCol . $targetRow)->getCalculatedValue();
+                    if (!empty($label)) {
+                        $id                                = $targetSheet->getCell($idCol . $targetRow)->getCalculatedValue();
+                        $this->valueMaps[$mapName][$label] = DF::namedNode($id);
+                    }
+                } catch (\PhpOffice\PhpSpreadsheet\Calculation\Exception $e) {
+                    if (preg_match('`^Vocabularies![A-Z]+[0-9]+ -> Formula Error: An unexpected error occurred`', $e->getMessage())) {
+                        $this->log?->warning("\t\tWrong formula in sheet $targetSheetName cell $labelCol$targetRow");
+                    } else {
+                        throw $e;
+                    }
                 }
             }
         }
