@@ -1,0 +1,46 @@
+@prefix acdh: <https://vocabs.acdh.oeaw.ac.at/schema#> .
+<https://www.geonames.org/1234/> 
+    a acdh:Place ;
+    acdh:hasTitle "place 1"@en ;
+    acdh:hasIdentifier <https://www.geonames.org/1234/> .
+<https://www.geonames.org/12345/>
+    a acdh:Place ;
+    acdh:hasTitle "place 2"@en ,
+                  "Platz 2"@de ;
+    acdh:hasAlternativeTitle "place alt1"@und ,
+                             "place alt3"@und ;
+    acdh:hasIdentifier <https://www.geonames.org/12345/> ,
+                       <https://www.geonames.org/12346/> .
+<https://www.geonames.org/54321/>
+    a acdh:Place ;
+    acdh:hasTitle "place 3"@en ;
+    acdh:hasIdentifier <https://www.geonames.org/54321/> ,
+                       <https://id.acdh.oeaw.ac.at/vienna> .
+<https://www.geonames.org/5432/>
+    a acdh:Place ;
+    acdh:hasTitle "place 4"@en ;
+    acdh:hasIdentifier <https://www.geonames.org/5432/> .
+<https://www.geonames.org/5433/>
+    a acdh:Place ;
+    acdh:hasTitle "Platz 4"@de ;
+    acdh:hasIdentifier <https://www.geonames.org/5433/> .
+<https://www.geonames.org/4321/>
+    a acdh:Place ;
+    acdh:hasTitle "place 5"@en ,
+                  "Platz 5"@de ;
+    acdh:hasIdentifier <https://www.geonames.org/4321/> ,
+                       <https://www.geonames.org/4322/> .
+<https://www.geonames.org/4567/>
+    a acdh:Place ;
+    acdh:hasTitle "place 6"@und ;
+    acdh:hasAlternativeTitle "place alt1"@und ,
+                             "place alt2"@und ,
+                             "place alt3"@und ;
+    acdh:hasIdentifier <https://www.geonames.org/4567/> ,
+                       <https://www.geonames.org/4568/> .
+<https://www.geonames.org/987/>
+    a acdh:Place ;
+    acdh:hasTitle "place 7"@und ;
+    acdh:hasIdentifier <https://www.geonames.org/987/> .
+
+

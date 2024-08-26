@@ -192,19 +192,26 @@ class EntityListWorksheet {
         $this->log?->info("\tReading entities of class " . $cfg->class->uri);
         $this->mapReferenceCols($cfg);
         $highestDataRow = $sheet->getHighestDataRow();
-        $entity         = $curLabel       = $entityRow      = null;
-        $uniqueIds      = [];
+        $entity         = null;
+        $curLabel       = null;
+        $prevLabel      = null;
+        $prevId         = null;
+        $entityRow      = null;
         $uniqueLabels   = [];
         $entities       = [];
         for ($row = $cfg->headerRow + 1; $row < $highestDataRow; $row++) {
-            $label = $sheet->getCell($labelCol . $row)->getCalculatedValue();
-            if (!empty($label) && $label !== $curLabel) {
+            $label = (string) $sheet->getCell($labelCol . $row)->getCalculatedValue();
+            $id    = (string) $sheet->getCell($idCol . $row)->getCalculatedValue();
+            if (!empty($label) && $label !== $prevLabel && $id !== $prevId) {
                 if ($entity !== null && $this->checkEntity($entity, $cfg->propertyMap)) {
                     $entities[$curLabel] = $entity;
                     $this->log?->debug("\t\tEntity read at row $entityRow:\n" . (string) $entity);
                 }
-                $entity    = $curLabel  = $entityRow = $sbj       = null;
-                $sbj       = $sheet->getCell($idCol . $row)->getCalculatedValue();
+                $entity    = null;
+                $curLabel  = null;
+                $prevLabel = null;
+                $entityRow = null;
+                $sbj       = $id;
                 if (empty($sbj)) {
                     $this->log?->debug("\t\tSkipping row $row because of an empty id column");
                 } else {
@@ -227,28 +234,16 @@ class EntityListWorksheet {
                 if ($obj === null) {
                     continue;
                 }
-                if ($col === $idCol) {
-                    $uniqueIds[(string) $obj][] = $curLabel;
-                }
                 $entity->add(DF::quadNoSubject($predMap[$col], $obj));
+            }
+            $prevId = $id;
+            if (!empty($label)) {
+                $prevLabel = $label;
             }
         }
         if ($entity !== null && self::checkEntity($entity, $cfg->propertyMap)) {
             $entities[$curLabel] = $entity;
             $this->log?->debug("\t\tEntity read at row $entityRow:\n" . (string) $entity);
-        }
-        foreach ($uniqueIds as $id => $labels) {
-            if (count($labels) > 0) {
-                $this->log?->debug("\t\tMerging " . implode(', ', $labels));
-                $merged = new Dataset();
-                foreach ($labels as $label) {
-                    $merged->add($entities[$label]);
-                }
-                foreach ($labels as $label) {
-                    $sbj = $entities[$label]->getNode();
-                    $entities[$label]->add($merged->map(fn(Quad $q) => $q->withSubject($sbj)));
-                }
-            }
         }
 
         if (count(array_filter($uniqueLabels, fn($x) => $x > 1)) > 0) {

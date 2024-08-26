@@ -1,6 +1,8 @@
 /nbproject/
 /nbproject/private/
 /vendor/
+/build/logs/
 /composer.lock
 /ontology.cache
 /tests/metadata.ttl
+/.phpunit.cache/

@@ -66,7 +66,7 @@ trait MetadataSpreadsheetTrait {
         static $onlyYear      = '/^-?[0-9]+$/';
 
         $coordinate = (string) ($this->horizontal ? $cell->getRow() : $cell->getColumn());
-        $value      = trim($cell->getCalculatedValue());
+        $value      = trim((string) $cell->getCalculatedValue());
         if (empty($value)) {
             return null;
         }
@@ -181,7 +181,7 @@ trait MetadataSpreadsheetTrait {
                 try {
                     $label = $targetSheet->getCell($labelCol . $targetRow)->getCalculatedValue();
                     if (!empty($label)) {
-                        $id                                = $targetSheet->getCell($idCol . $targetRow)->getCalculatedValue();
+                        $id                                = (string) $targetSheet->getCell($idCol . $targetRow)->getCalculatedValue();
                         $this->valueMaps[$mapName][$label] = DF::namedNode($id);
                     }
                 } catch (\PhpOffice\PhpSpreadsheet\Calculation\Exception $e) {

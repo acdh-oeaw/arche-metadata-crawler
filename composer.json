@@ -31,6 +31,12 @@
         "bin/arche-crawl-meta"
       ],
     "require-dev": {
-        "phpstan/phpstan": "^1"
+        "phpstan/phpstan": "^1",
+        "phpunit/phpunit": "*"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "acdhOeaw\\arche\\metadataCrawler\\tests\\": "tests"
+        }
     }
 }

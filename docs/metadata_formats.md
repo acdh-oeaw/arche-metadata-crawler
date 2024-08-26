@@ -66,8 +66,6 @@ is processed last is used. There is a corresponding warning message displayed.
 
 ### Providing multiple property values for a single entity
 
-There are two conventions possible (and they can be mixed):
-
 * Leave other cells empty, e.g.
   ```
   | hasTitle | hasIdentifier | hasContact |
@@ -86,6 +84,18 @@ There are two conventions possible (and they can be mixed):
   | foo      |               | Andy       |
   | bar      | barId         | Clara      |
   ```
+
+If you need to provide `hasTitle` in multiple languages, you should repeat the `hasIdentifier` column value, e.g.:
+
+```
+| hasTitle | hasIdentifier | hasContact |
+|----------|---------------|------------|
+| foo@en   | fooBarId1     | John       |
+| bar@de   | fooBarId1     | Alice      |
+|          | fooBarId2     |            |
+| bar      | barId         | Clara      |
+
+```    
 
 ### Referencing named entities from other files
 

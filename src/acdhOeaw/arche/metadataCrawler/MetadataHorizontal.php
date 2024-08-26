@@ -97,7 +97,7 @@ class MetadataHorizontal implements IteratorAggregate {
             $valueCol = null;
             for ($col = self::MAP_COL_FROM; $col <= self::MAP_COL_TO; $col++) {
                 $cell = $sheet->getCell([$col, $row]);
-                $val  = mb_strtolower(trim($cell->getCalculatedValue()));
+                $val  = mb_strtolower(trim((string) $cell->getCalculatedValue()));
                 if ($val === self::COL_PROPERTY && $propCol === null) {
                     $propCol = $cell->getColumn();
                 } elseif ($valueCol === null && preg_match(self::COL_VALUE, $val)) {

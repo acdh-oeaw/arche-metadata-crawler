@@ -122,14 +122,14 @@ class MetadataChecker {
                 }
             }
 
-//            $tmp        = new \quickRdf\DatasetNode($sbj);
-//            $doorkeeper = new \acdhOeaw\arche\doorkeeper\Resource($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, null, $this->log);
-//            try {
-//                $doorkeeper->runTests(\acdhOeaw\arche\doorkeeper\CheckAttribute::class);
-//            } catch (\acdhOeaw\arche\doorkeeper\DoorkeeperException $e) {
-//                $this->log?->error("$sbj errors: \n" . $e->getMessage());
-//                $noErrors = false;
-//            }
+            $tmp        = new \quickRdf\DatasetNode($sbj);
+            $doorkeeper = new \acdhOeaw\arche\doorkeeper\Resource($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, null, $this->log);
+            try {
+                $doorkeeper->runTests(\acdhOeaw\arche\doorkeeper\CheckAttribute::class);
+            } catch (\acdhOeaw\arche\doorkeeper\DoorkeeperException $e) {
+                $this->log?->error("$sbj errors: \n" . $e->getMessage());
+                $noErrors = false;
+            }
 
             if (count($errors) > 0) {
                 $noErrors = false;

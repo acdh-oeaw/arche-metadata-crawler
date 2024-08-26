@@ -4,17 +4,28 @@ on:
   push: ~
 
 jobs:
-  docker:
+  phpunit:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     #- uses: mxschmitt/action-tmate@v3
     - name: composer
-      run: composer update --no-dev -o 
-    - name: test
+      run: composer update 
+    - name: integration tests
       run: |
         bin/arche-create-metadata-template /tmp all
         RET=1
         bin/arche-crawl-meta tests/meta/ /tmp/metadata.ttl /home/zozlak/roboty/ACDH/repo/metadata-crawler/tests/data https://id.acdh.oeaw.ac.at/tests || RET=0
         exit $RET
+    - name: unit tests
+      run: |
+        mkdir -p build/logs
+        XDEBUG_MODE=coverage vendor/bin/phpunit
+    - name: coveralls
+      run: |
+        export COVERALLS_RUN_LOCALLY=1
+        export COVERALLS_REPO_TOKEN=${{ secrets.coverallsToken }}
+        rm -fR composer.json composer.lock vendor
+        composer require php-coveralls/php-coveralls
+        php vendor/bin/php-coveralls -v
 
