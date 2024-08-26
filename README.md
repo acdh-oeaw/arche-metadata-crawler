@@ -1,7 +1,7 @@
 ﻿# Metadata Crawler
 
 [![Latest Stable Version](https://poser.pugx.org/acdh-oeaw/arche-metadata-crawler/v/stable)](https://packagist.org/packages/acdh-oeaw/arche-metadata-crawler)
-![Build status](https://github.com/acdh-oeaw/arche-metadata-crawler/workflows/phpunit/badge.svg?branch=master)
+![Build status](https://github.com/acdh-oeaw/arche-metadata-crawler/workflows/test/badge.svg?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/acdh-oeaw/arche-metadata-crawler/badge.svg?branch=master)](https://coveralls.io/github/acdh-oeaw/arche-metadata-crawler?branch=master)
 [![License](https://poser.pugx.org/acdh-oeaw/arche-metadata-crawler/license)](https://packagist.org/packages/acdh-oeaw/arche-metadata-crawler)
 
