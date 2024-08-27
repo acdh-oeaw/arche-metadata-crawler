@@ -116,7 +116,9 @@ class EntitiesDatabase {
         } elseif (!$keySet) {
             $this->log?->warning("\t\t\tduplication for key '$key' - skipping the mapping $msg");
         } elseif ($map[$key]->getNode()->equals($entity->getNode())) {
-            $this->log?->warning("\t\t\toverwriting metadata for key '$key' $msg");
+            if ($map[$key] !== $entity) {
+                $this->log?->warning("\t\t\toverwriting metadata for key '$key' $msg");
+            }
         } else {
             $this->log?->warning("\t\t\tduplication for key '$key' - removing the mapping $msg");
             $map[$key] = null;

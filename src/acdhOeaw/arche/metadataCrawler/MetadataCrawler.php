@@ -27,7 +27,6 @@
 namespace acdhOeaw\arche\metadataCrawler;
 
 use DirectoryIterator;
-use SplFileInfo;
 use SplObjectStorage;
 use Psr\Log\LoggerInterface;
 use quickRdf\Dataset;

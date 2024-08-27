@@ -6,7 +6,7 @@
 <https://www.geonames.org/12345/>
     a acdh:Place ;
     acdh:hasTitle "place 2"@en ,
-                  "Platz 2"@de ;
+                  "place 2"@de ;
     acdh:hasAlternativeTitle "place alt1"@und ,
                              "place alt3"@und ;
     acdh:hasIdentifier <https://www.geonames.org/12345/> ,
