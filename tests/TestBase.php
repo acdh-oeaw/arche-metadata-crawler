@@ -39,6 +39,7 @@ class TestBase extends \PHPUnit\Framework\TestCase {
 
     const REPOSITORY_URL = 'https://arche.acdh.oeaw.ac.at/api';
     const DEFAULT_LANG   = 'und';
+    const LOG_FILE       = __DIR__ . '/data/log';
 
     static protected Ontology $ontology;
     static protected Schema $schema;
@@ -47,5 +48,19 @@ class TestBase extends \PHPUnit\Framework\TestCase {
         $repo           = Repo::factoryFromUrl(self::REPOSITORY_URL);
         self::$schema   = $repo->getSchema();
         self::$ontology = Ontology::factoryRest(self::REPOSITORY_URL, __DIR__ . '/ontology.cache', 36000);
+    }
+
+    public function setUp(): void {
+        parent::setUp();
+
+        fclose(fopen(self::LOG_FILE, 'w'));
+    }
+
+    public function tearDown(): void {
+        parent::tearDown();
+
+        if (file_exists(self::LOG_FILE)) {
+            unlink(self::LOG_FILE);
+        }
     }
 }

@@ -5,4 +5,5 @@
 /composer.lock
 /ontology.cache
 /tests/metadata.ttl
+/tests/ontology.cache
 /.phpunit.cache/

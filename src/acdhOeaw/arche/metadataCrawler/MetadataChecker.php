@@ -195,8 +195,7 @@ class MetadataChecker {
     private function checkNamedEntity(NamedNode $value, bool $resolve,
                                       PropertyDesc $propDesc, array &$errors): void {
         static $tmpl = null;
-        $tmpl        ??= new QT(null, new NT(new AT([$this->schema->id, $this->schema->label,
-                    DF::namedNode(RDF::RDF_TYPE)])));
+        $tmpl        ??= new QT(null, new NT(new AT([$this->schema->id, DF::namedNode(RDF::RDF_TYPE)])));
         if ($propDesc->uri === (string) $this->schema->id) {
             $norms = [$this->normalizers['']];
         } else {
@@ -217,7 +216,7 @@ class MetadataChecker {
                     }
                 }
             } catch (UriNormalizerException $ex) {
-                $errors[] = $propDesc->uri . ' value ' . $ex->getMessage();
+                $errors[] = $propDesc->uri . ' value ' . $value . ': ' . $ex->getMessage();
             }
         }
     }

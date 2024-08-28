@@ -38,22 +38,6 @@ use zozlak\logging\Log;
  */
 class EntitiesDatabaseTest extends TestBase {
 
-    const LOG_FILE = __DIR__ . '/data/log';
-
-    public function setUp(): void {
-        parent::setUp();
-
-        fclose(fopen(self::LOG_FILE, 'w'));
-    }
-
-    public function tearDown(): void {
-        parent::tearDown();
-
-        if (file_exists(self::LOG_FILE)) {
-            unlink(self::LOG_FILE);
-        }
-    }
-
     public function testLangLabel(): void {
         $l   = new Log(self::LOG_FILE);
         $elw = new EntityListWorksheet(__DIR__ . '/data/EntityListWorksheetIdsLabels.xlsx', self::$ontology, self::$schema, self::DEFAULT_LANG);
