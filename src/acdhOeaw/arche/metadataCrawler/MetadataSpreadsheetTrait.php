@@ -110,6 +110,7 @@ trait MetadataSpreadsheetTrait {
                 $value = explode('@', $value);
                 if (count($value) > 1) {
                     $lang = array_pop($value);
+                    $lang = preg_replace('/[[:blank:]]+$/u', '', $lang);
                 }
                 $value = implode('@', $value);
                 return DF::literal($value, $lang);
