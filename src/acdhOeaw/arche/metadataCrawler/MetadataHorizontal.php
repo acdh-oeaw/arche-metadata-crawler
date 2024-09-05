@@ -51,7 +51,7 @@ class MetadataHorizontal implements IteratorAggregate {
     private const MAP_ROW_FROM = 1;
     private const MAP_ROW_TO   = 20;
     private const MAP_COL_FROM = 1;
-    private const MAP_COL_TO   = 20;
+    private const MAP_COL_TO   = 100;
 
     private Dataset $meta;
     private Ontology $ontology;
