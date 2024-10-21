@@ -66,7 +66,12 @@ trait MetadataSpreadsheetTrait {
         static $onlyYear      = '/^-?[0-9]+$/';
 
         $coordinate = (string) ($this->horizontal ? $cell->getRow() : $cell->getColumn());
-        $value      = trim((string) $cell->getCalculatedValue()); #TODO change to mb_trim() in PHP 8.4
+        try {
+            $value = trim((string) $cell->getCalculatedValue()); #TODO change to mb_trim() in PHP 8.4
+        } catch (\Throwable $e) {
+            print_r([$cell->getCoordinate(), $cell->getValue()]);
+            throw $e;
+        }
         if (empty($value)) {
             return null;
         }
