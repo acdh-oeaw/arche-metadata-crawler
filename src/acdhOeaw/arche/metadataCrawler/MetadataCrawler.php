@@ -317,6 +317,24 @@ class MetadataCrawler {
                 $sortedMeta->add($meta->getIterator(new QT($sbj, $prop)));
             }
         }
+        
+        // finally add all subjects from the metaSecondary which point with any property to
+        // a subject already existing in the soretedMeta
+        $included = new SplObjectStorage();
+        foreach($sortedMeta->listSubjects() as $i) {
+            $included->attach($i);
+        }
+        foreach ($this->metaSecondary as $i) {
+            $sbj = $i->getSubject();
+            $obj = $i->getObject();
+            if (!str_starts_with((string) $sbj, $this->schema->namespaces->id) || $included->contains($sbj) || !$included->contains($obj)) {
+                continue;
+            }
+            echo "Adding $sbj because of $i\n";
+            $sortedMeta->add($this->metaSecondary->getIterator(new QT($sbj)));
+            $included->attach($sbj);
+        }
+        
         return $sortedMeta;
     }
 
