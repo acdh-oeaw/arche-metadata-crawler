@@ -291,8 +291,13 @@ class MetadataCrawler {
             }
             // any other entity meta collected from metadata input
             $tmpl = new QT($obj);
+            $n = $sortedMeta->count();
             $sortedMeta->add($this->metaPrimary->getIterator($tmpl));
             $sortedMeta->add($this->metaSecondary->getIterator($tmpl));
+            if ($sortedMeta->count() > $n) {
+                // make sure the added subject has an id
+                $sortedMeta->add(DF::quad($obj, $this->schema->id, $obj));
+            }
         }
         // now add them to $sortedMeta so they are placed after persons/organizations/places
         // (they will be added once again from $meta below with no effect as they will exist with $sortedMeta already)
