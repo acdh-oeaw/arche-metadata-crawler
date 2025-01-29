@@ -34,6 +34,7 @@ require_once "$composerDir/vendor/autoload.php";
 use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\Repo;
 use zozlak\logging\Log;
+use zozlak\logging\LogMultiplexer;
 use Psr\Log\LogLevel;
 use zozlak\RdfConstants as RDF;
 use zozlak\argparse\ArgumentParser;
@@ -51,6 +52,7 @@ $parser->addArgument('--noCheck', action: ArgumentParser::ACTION_STORE_TRUE);
 $parser->addArgument('--noCheckProgress', action: ArgumentParser::ACTION_STORE_TRUE);
 $parser->addArgument('--repositoryUrl', default: 'https://arche.acdh.oeaw.ac.at/api/');
 $parser->addArgument('--logFile', default: 'php://stdout');
+$parser->addArgument('--errorLog', help: 'Path to a CSV log storing only the resulting metadata check errors');
 $parser->addArgument('--verbose', action: ArgumentParser::ACTION_STORE_TRUE);
 $parser->addArgument('--tmpDir', default: '/tmp');
 $parser->addArgument('metadataDir');
@@ -59,7 +61,8 @@ $parser->addArgument('dataDir');
 $parser->addArgument('idPrefix');
 $args   = $parser->parseArgs();
 
-$log = new Log($args->logFile, $args->verbose ? LogLevel::DEBUG : LogLevel::INFO);
+$log = new LogMultiplexer();
+$log->addLog(new Log($args->logFile, $args->verbose ? LogLevel::DEBUG : LogLevel::INFO));
 
 $filecheckerFile = ($args->filecheckerReportDir ?? '') . '/fileList.json';
 if (!empty($args->filecheckerReportDir) && file_exists($filecheckerFile)) {
@@ -85,6 +88,12 @@ try {
 
     $noErrors = true;
     if (!$args->noCheck) {
+        if (!empty($args->errorLog)) {
+            $errLog = new Log($args->errorLog, LogLevel::ERROR, "{MESSAGE}");
+            $errLog->error('resource;error message');
+            $log->addLog($errLog);
+        }
+        
         $log->info("----------------------------------------");
         $log->info("Checking merged metadata");
         $log->info("----------------------------------------");

@@ -120,20 +120,17 @@ class MetadataChecker {
                     $classDesc = $this->ontology->getClass($class);
                     $this->checkClass($sbjMeta, $classDesc, $errors);
                 }
+#                $tmp           = new \quickRdf\DatasetNode($sbj);
+#                $doorkeeper    = new \acdhOeaw\arche\doorkeeper\Resource($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, null, $this->log);
+#                $doorkepeerErr = $doorkeeper->runTests(\acdhOeaw\arche\doorkeeper\CheckAttribute::class, throwException: false);
+#                $errors        = array_merge($errors, array_map(fn($x) => $x->getMessage(), $doorkepeerErr));
             }
-
-//            $tmp        = new \quickRdf\DatasetNode($sbj);
-//            $doorkeeper = new \acdhOeaw\arche\doorkeeper\Resource($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, null, $this->log);
-//            try {
-//                $doorkeeper->runTests(\acdhOeaw\arche\doorkeeper\CheckAttribute::class);
-//            } catch (\acdhOeaw\arche\doorkeeper\DoorkeeperException $e) {
-//                $this->log?->error("$sbj errors: \n" . $e->getMessage());
-//                $noErrors = false;
-//            }
 
             if (count($errors) > 0) {
                 $noErrors = false;
-                $this->log?->error("$sbj errors: \n" . print_r($errors, true));
+                foreach ($errors as $e) {
+                    $this->log?->error("$sbj;$e");
+                }
             }
         }
         return $noErrors;
