@@ -116,14 +116,14 @@ class MetadataChecker {
             } elseif (count($sbjClasses) > 1) {
                 $errors[] = "multiple rdf:types: " . implode(', ', $sbjClasses);
             } else {
-                foreach ($sbjClasses as $class) {
-                    $classDesc = $this->ontology->getClass($class);
-                    $this->checkClass($sbjMeta, $classDesc, $errors);
-                }
-#                $tmp           = new \quickRdf\DatasetNode($sbj);
-#                $doorkeeper    = new \acdhOeaw\arche\doorkeeper\Resource($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, null, $this->log);
-#                $doorkepeerErr = $doorkeeper->runTests(\acdhOeaw\arche\doorkeeper\CheckAttribute::class, throwException: false);
-#                $errors        = array_merge($errors, array_map(fn($x) => $x->getMessage(), $doorkepeerErr));
+#                foreach ($sbjClasses as $class) {
+#                    $classDesc = $this->ontology->getClass($class);
+#                    $this->checkClass($sbjMeta, $classDesc, $errors);
+#                }
+                $tmp           = new \quickRdf\DatasetNode($sbj);
+                $doorkeeper    = new \acdhOeaw\arche\doorkeeper\Resource($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, null, $this->log);
+                $doorkepeerErr = $doorkeeper->runTests(\acdhOeaw\arche\doorkeeper\CheckAttribute::class, throwException: false);
+                $errors        = array_merge($errors, array_map(fn($x) => $x->getMessage(), $doorkepeerErr));
             }
 
             if (count($errors) > 0) {
