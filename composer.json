@@ -15,7 +15,7 @@
         "zozlak/argparse": "^1.0",
         "acdh-oeaw/arche-assets": "^3.9.4",
         "acdh-oeaw/arche-lib-schema": "^7",
-        "acdh-oeaw/arche-lib-ingest": "^4",
+        "acdh-oeaw/arche-lib-ingest": "^4 | ^5",
         "phpoffice/phpspreadsheet": "^1.29",
         "acdh-oeaw/arche-doorkeeper": "^6.0.1",
         "zozlak/logging": "^1.0"
