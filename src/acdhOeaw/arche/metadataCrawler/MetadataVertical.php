@@ -33,6 +33,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\RowCellIterator;
+use rdfInterface\QuadInterface;
 use quickRdf\DataFactory as DF;
 use quickRdf\Dataset;
 use acdhOeaw\arche\lib\schema\Ontology;
@@ -44,6 +45,8 @@ use acdhOeaw\arche\metadataCrawler\container\PropertyMapping;
  * Description of MetadataVertical
  *
  * @author zozlak
+ * 
+ * @implements IteratorAggregate<QuadInterface>
  */
 class MetadataVertical implements IteratorAggregate {
 
@@ -55,14 +58,15 @@ class MetadataVertical implements IteratorAggregate {
     private const COLUMN_FILENAME = 'filename';
 
     private Ontology $ontology;
+
+    /** @phpstan-ignore property.onlyWritten */
     private Schema $schema;
     private FileId $idgen;
-    private LoggerInterface | null $log;
     private Dataset $meta;
 
     /**
      * 
-     * @var array<string, PropertyMapping>
+     * @var array<int, PropertyMapping>
      */
     private array $mapping;
     private ?string $colPath;
@@ -93,6 +97,10 @@ class MetadataVertical implements IteratorAggregate {
         }
     }
 
+    /**
+     * 
+     * @return Traversable<QuadInterface>
+     */
     public function getIterator(): Traversable {
         return $this->meta->getIterator();
     }
@@ -157,6 +165,7 @@ class MetadataVertical implements IteratorAggregate {
             if (empty($path)) {
                 $path = $prevPath;
             } elseif ($path !== $prevPath) {
+                /** @phpstan-ignore empty.variable */
                 if (!empty($path)) {
                     $sbj = DF::namedNode($this->idgen->getId($path));
                     $n++;

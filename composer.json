@@ -31,7 +31,7 @@
         "bin/arche-crawl-meta"
       ],
     "require-dev": {
-        "phpstan/phpstan": "^1",
+        "phpstan/phpstan": "*",
         "phpunit/phpunit": "*"
     },
     "autoload-dev": {

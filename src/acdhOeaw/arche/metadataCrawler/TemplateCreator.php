@@ -47,7 +47,7 @@ use zozlak\RdfConstants as RDF;
  */
 class TemplateCreator {
 
-    public const LOCK_PSWD             = 'ARCHE';
+    public const LOCK_PSWD              = 'ARCHE';
     private const HORIZONTAL_ROW_HEIGHT = 2;
     private const FIRST_ROW_ID_ONLY     = 9;
     private const FIRST_ROW_OTHER       = 8;
@@ -62,7 +62,6 @@ class TemplateCreator {
         'https://vocabs.acdh.oeaw.ac.at/schema#Organisation',
         'https://vocabs.acdh.oeaw.ac.at/schema#Place',
     ];
-    private const AGENT_CLASS           = 'https://vocabs.acdh.oeaw.ac.at/schema#Agent';
     private const STYLES                = [
         'title'   => [
             'font'      => [
@@ -176,6 +175,7 @@ class TemplateCreator {
         $properties = array_filter($properties, fn(PropertyDesc $x) => !$x->automatedFill && 0 === count(array_intersect($x->property, self::SKIP_PROPERTIES)));
         $orderFn    = fn(PropertyDesc $x) => -999999 * in_array($labelProp, $x->property) - 888888 * in_array($idProp, $x->property) - 777777 * ($x->min > 0) - 666666 * $x->recommendedClass + $x->ordering;
         usort($properties, fn(PropertyDesc $a, PropertyDesc $b) => $orderFn($a) <=> $orderFn($b));
+        /** @phpstan-ignore arrayValues.list */
         $properties = array_values($properties);
 
         $shortName = $this->shortenUri($class);
@@ -309,6 +309,7 @@ class TemplateCreator {
             $properties = $classDesc->getProperties();
             $properties = array_filter($properties, fn(PropertyDesc $x) => !$x->automatedFill && 0 === count(array_intersect($x->property, self::SKIP_PROPERTIES)));
             usort($properties, fn(PropertyDesc $a, PropertyDesc $b) => $orderFn($a) <=> $orderFn($b));
+            /** @phpstan-ignore arrayValues.list */
             $properties = array_values($properties);
 
             $shortName = $this->shortenUri($class);
@@ -389,6 +390,11 @@ class TemplateCreator {
         $writer->save($path);
     }
 
+    /**
+     * 
+     * @param array<string, string> $vocabularies
+     * @param array<string> $classes
+     */
     private function processValidation(PropertyDesc $prop, array &$vocabularies,
                                        Worksheet $sheet, string $valuesRange,
                                        Worksheet $vocabularySheet,
@@ -481,6 +487,10 @@ class TemplateCreator {
         return '$' . $colLabel . '$2:$' . $colLabel . '$' . ($row - 1);
     }
 
+    /**
+     * 
+     * @param array<string> $classes
+     */
     private function createInstanceList(string $name, array $classes,
                                         Worksheet $sheet, string $prevRange): string {
         $name = $this->shortenUri($name);
@@ -500,6 +510,10 @@ class TemplateCreator {
         return '$' . $colLabel . '$2:$' . $colLabel . '$' . ($row - 1);
     }
 
+    /**
+     * 
+     * @return array<string>
+     */
     private function initVocabulary(Worksheet $sheet, string $name,
                                     string $prevRange): array {
         $colLabel = CellAddress::fromCellAddress(explode(':', $prevRange)[1])->columnId() + 3;
@@ -519,6 +533,10 @@ class TemplateCreator {
         return in_array($class, self::ID_ONLY_CLASSES) ? self::FIRST_ROW_ID_ONLY : self::FIRST_ROW_OTHER;
     }
 
+    /**
+     * 
+     * @return array<string, mixed>
+     */
     private function getStyle(string $name, ?bool $bold = null,
                               ?bool $border = null, ?string $align = null): array {
         $style = self::STYLES[$name];
@@ -526,6 +544,7 @@ class TemplateCreator {
             $style['font']['bold'] = $bold;
         }
         if ($border === false) {
+            /** @phpstan-ignore unset.offset */
             unset($style['borders']);
         } elseif ($border === true) {
             foreach (['bottom', 'left', 'right', 'top', 'inside'] as $i) {
@@ -541,6 +560,10 @@ class TemplateCreator {
         return $style;
     }
 
+    /**
+     * 
+     * @param array<string> $coveredClasses
+     */
     private function covers(array $coveredClasses, ClassDesc $class): bool {
         $notCovered = $this->ontology->getChildClasses($class);
         $notCovered = array_filter($notCovered, fn($x) => count(array_diff($x->class, $class->class)) > 0);

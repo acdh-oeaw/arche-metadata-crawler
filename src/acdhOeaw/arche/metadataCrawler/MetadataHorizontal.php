@@ -29,6 +29,7 @@ namespace acdhOeaw\arche\metadataCrawler;
 use IteratorAggregate;
 use Traversable;
 use Psr\Log\LoggerInterface;
+use rdfInterface\QuadInterface;
 use quickRdf\DataFactory as DF;
 use quickRdf\Dataset;
 use acdhOeaw\arche\lib\schema\Ontology;
@@ -41,6 +42,8 @@ use acdhOeaw\arche\metadataCrawler\container\PropertyMapping;
  * Description of MetadataHorizontal
  *
  * @author zozlak
+ * 
+ * @implements IteratorAggregate<QuadInterface>
  */
 class MetadataHorizontal implements IteratorAggregate {
 
@@ -57,11 +60,10 @@ class MetadataHorizontal implements IteratorAggregate {
     private Ontology $ontology;
     private Schema $schema;
     private string $idPrefix;
-    private LoggerInterface | null $log;
 
     /**
      * 
-     * @var array<string, PropertyMapping>
+     * @var array<int, PropertyMapping>
      */
     private array $mapping;
     private int $valueColumn;
@@ -87,6 +89,10 @@ class MetadataHorizontal implements IteratorAggregate {
         }
     }
 
+    /**
+     * 
+     * @return Traversable<QuadInterface>
+     */
     public function getIterator(): Traversable {
         return $this->meta->getIterator();
     }

@@ -26,6 +26,7 @@
 
 namespace acdhOeaw\arche\metadataCrawler;
 
+use BadMethodCallException;
 use Generator;
 use SplObjectStorage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -33,6 +34,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\ColumnCellIterator;
 use PhpOffice\PhpSpreadsheet\Worksheet\RowCellIterator;
 use acdhOeaw\arche\lib\schema\Ontology;
+use rdfInterface\DatasetNodeInterface;
 use quickRdf\Dataset;
 use quickRdf\DatasetNode;
 use quickRdf\DataFactory as DF;
@@ -76,7 +78,6 @@ class EntityListWorksheet {
      * @var array<string, WorksheetConfig>
      */
     private array $classes = [];
-    private LoggerInterface | null $log     = null;
 
     public function __construct(string $path, Ontology $ontology,
                                 Schema $schema, string $defaultLang,
@@ -96,7 +97,7 @@ class EntityListWorksheet {
 
     /**
      * 
-     * @return Generator<DatasetNode>
+     * @return Generator<DatasetNodeInterface>
      */
     public function readEntities(): Generator {
         if (count($this->classes) > 0) {
@@ -112,6 +113,7 @@ class EntityListWorksheet {
             self::STRICT_REQUIRED => fn(PropertyDesc $x) => !$x->automatedFill && !in_array($x->uri, self::SKIP_PROPERTIES) && $x->min > 0,
             self::STRICT_RECOMMENDED => fn(PropertyDesc $x) => !$x->automatedFill && !in_array($x->uri, self::SKIP_PROPERTIES) && ($x->min > 0 || $x->recommendedClass),
             self::STRICT_OPTIONAL => fn(PropertyDesc $x) => !$x->automatedFill && !in_array($x->uri, self::SKIP_PROPERTIES),
+            default => throw new BadMethodCallException('Wrong strictness parameter value')
         };
 
         $nmsp       = $this->ontology->getNamespace();
@@ -179,6 +181,10 @@ class EntityListWorksheet {
         }
     }
 
+    /**
+     * 
+     * @return array<DatasetNodeInterface>
+     */
     private function loadEntities(WorksheetConfig $cfg): array {
         $idProp    = (string) $this->schema->id;
         $labelProp = (string) $this->schema->label;

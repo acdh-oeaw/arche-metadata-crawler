@@ -42,19 +42,20 @@ use Psr\Log\LoggerInterface;
  */
 class EntitiesDatabase {
 
+    /** @phpstan-ignore property.onlyWritten */
     private Ontology $ontology;
     private Schema $schema;
     private LoggerInterface | null $log;
 
     /**
      * 
-     * @var array<string, DateasetNodeInterface>
+     * @var array<string, DatasetNodeInterface>
      */
     private array $byId = [];
 
     /**
      * 
-     * @var array<string, array<string, DatasetNodeInterface>>
+     * @var array<string, array<string, DatasetNodeInterface|null>>
      */
     private array $byClass = [];
 
@@ -104,7 +105,7 @@ class EntitiesDatabase {
      * 
      * @param DatasetNodeInterface $entity
      * @param string $key
-     * @param array<DatasetNodeInterface> $map
+     * @param array<DatasetNodeInterface|null> $map
      * @return void
      */
     private function checkAndMap(DatasetNodeInterface $entity, string $key,
@@ -141,6 +142,11 @@ class EntitiesDatabase {
         return $entity->getObject(new PT($this->schema->id));
     }
 
+    /**
+     * 
+     * @param string $class
+     * @return array<DatasetNodeInterface>
+     */
     public function getEntitiesOfClass(string $class): array {
         return array_unique(array_filter($this->byClass[$class] ?? [], fn($x) => $x !== null), SORT_REGULAR);
     }

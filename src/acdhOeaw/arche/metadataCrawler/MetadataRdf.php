@@ -30,6 +30,7 @@ use IteratorAggregate;
 use Traversable;
 use Psr\Log\LoggerInterface;
 use rdfInterface\TermInterface;
+use rdfInterface\QuadInterface;
 use quickRdf\DataFactory as DF;
 use quickRdf\Dataset;
 use quickRdfIo\Util as RdfIoUtil;
@@ -39,14 +40,15 @@ use quickRdfIo\RdfIoException;
  * Description of MetadataRdf
  *
  * @author zozlak
+ * 
+ * @implements IteratorAggregate<QuadInterface>
  */
 class MetadataRdf implements IteratorAggregate {
 
     private Dataset $meta;
     private LoggerInterface | null $log;
 
-    public function __construct(string $path, TermInterface $idProp,
-                                LoggerInterface | null $log = null) {
+    public function __construct(string $path, LoggerInterface | null $log = null) {
         $this->log = $log;
 
         $this->log?->debug("Trying to map $path as an RDF file");

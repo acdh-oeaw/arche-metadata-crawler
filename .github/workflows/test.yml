@@ -10,7 +10,9 @@ jobs:
     - uses: actions/checkout@v4
     #- uses: mxschmitt/action-tmate@v3
     - name: composer
-      run: composer update 
+      run: composer update
+    - name: phpstan
+      run: vendor/bin/phpstan analyze -l 6 src
     - name: integration tests
       run: |
         bin/arche-create-metadata-template /tmp all

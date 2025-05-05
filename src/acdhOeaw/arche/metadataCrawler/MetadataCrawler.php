@@ -33,6 +33,7 @@ use quickRdf\Dataset;
 use rdfInterface\DatasetInterface;
 use rdfInterface\NamedNodeInterface;
 use rdfInterface\TermInterface;
+use rdfInterface\QuadInterface;
 use quickRdf\DataFactory as DF;
 use quickRdf\Quad;
 use quickRdf\NamedNode;
@@ -62,9 +63,7 @@ class MetadataCrawler {
     private string $defaultLang;
     private LoggerInterface | null $log;
     private EntitiesDatabase $entitiesDb;
-    private FileId $idgen;
     private NamedNode $idProp;
-    private array $files;
     private Dataset $metaPrimary;
     private Dataset $metaSecondary;
 
@@ -109,7 +108,7 @@ class MetadataCrawler {
                 }
             } elseif ($i->getFilename() !== self::FILECHECKER_FILE) {
                 try {
-                    $this->metaSecondary->add(new MetadataRdf($i->getPathname(), $this->schema->id, $this->log));
+                    $this->metaSecondary->add(new MetadataRdf($i->getPathname(), $this->log));
                 } catch (\Exception $e) {
                     $this->log?->warning("Failed to parse " . $i->getPathname() . " as an RDF file");
                 }
@@ -138,7 +137,7 @@ class MetadataCrawler {
 
     /**
      * 
-     * @param iterable<Quad> $meta
+     * @param iterable<QuadInterface> $meta
      * @return int
      */
     private function addMetaSecondary(iterable $meta): int {
@@ -207,6 +206,7 @@ class MetadataCrawler {
                 $this->metaPrimary->add(DF::quad($id, $this->schema->mime, DF::literal($i->mime)));
             }
             if (!empty($i->hasCategory)) {
+                /** @phpstan-ignore property.notFound */
                 $this->metaPrimary->add(DF::quad($id, $this->schema->category, DF::namedNode($i->hasCategory)));
             }
             $n++;
@@ -258,6 +258,7 @@ class MetadataCrawler {
                 }
             }
             if ($metaTmp->none($labelTmpl)) {
+                /** @phpstan-ignore method.notFound */
                 $metaTmp->add($metaTmp->map(fn(Quad $x) => $x->withPredicate($this->schema->label)->withObject($x->getObject()->withLang('und')), $filenameTmpl));
             }
             $meta->add($metaTmp);
@@ -275,7 +276,7 @@ class MetadataCrawler {
             function (Quad $x) {
                 $prop     = $x->getPredicate();
                 $propDesc = $this->ontology->getProperty(null, (string) $prop);
-                return !$prop->equals($this->idProp) && $propDesc?->type === RDF::OWL_OBJECT_PROPERTY && empty($propDesc?->vocabs);
+                return !$prop->equals($this->idProp) && $propDesc?->type === RDF::OWL_OBJECT_PROPERTY && empty($propDesc->vocabs);
             }
         );
         foreach ($objects as $obj) {
@@ -343,7 +344,6 @@ class MetadataCrawler {
      * has no caching.
      * 
      * @param Dataset $meta
-     * @param Quad $x
      * @return void
      */
     private function mapVocabularies(Dataset $meta): void {
@@ -351,6 +351,7 @@ class MetadataCrawler {
             /* @var $propDesc PropertyDesc */
             if (!empty($propDesc->vocabs)) {
                 $values = [];
+                /** @phpstan-ignore property.private */
                 foreach ($propDesc->vocabularyValues as $concept) {
                     foreach ($concept->concept as $id) {
                         $values[$id] = $concept->uri;

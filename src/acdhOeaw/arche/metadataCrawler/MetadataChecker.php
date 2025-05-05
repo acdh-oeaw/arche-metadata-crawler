@@ -30,6 +30,7 @@ use Psr\Log\LoggerInterface;
 use GuzzleHttp\Client;
 use quickRdf\Dataset;
 use rdfInterface\DatasetInterface;
+use rdfInterface\NamedNodeInterface;
 use quickRdf\DataFactory as DF;
 use quickRdf\Literal;
 use quickRdf\NamedNode;
@@ -62,10 +63,22 @@ class MetadataChecker {
     private Ontology $ontology;
     private Schema $schema;
     private LoggerInterface | null $log;
+    /**
+     * 
+     * @var array<string, UriNormalizer>
+     */
     private array $normalizers;
+    /**
+     * 
+     * @var array<string, array<string>>
+     */
     private array $checkRanges;
+    /**
+     * 
+     * @var array<string, array<string, string>>
+     */
     private array $vocabularies;
-    private Dataset $meta;
+    private DatasetInterface $meta;
 
     public function __construct(Ontology $ontology, Schema $schema,
                                 LoggerInterface | null $log = null) {
@@ -83,6 +96,7 @@ class MetadataChecker {
         $this->normalizers = [
             '' => new UriNormalizer(cache: $cache),
         ];
+        /** @phpstan-ignore property.notFound */
         foreach ($schema->checkRanges as $class => $ranges) {
             $rules                     = UriNormRules::getRules(array_map(fn($x) => (string) $x, iterator_to_array($ranges)));
             $this->normalizers[$class] = new UriNormalizer($rules, '', $client, $cache);
@@ -91,6 +105,7 @@ class MetadataChecker {
         foreach ($this->ontology->getProperties() as $propDesc) {
             if (!empty($propDesc->vocabs)) {
                 $tmp = [];
+                /** @phpstan-ignore property.private */
                 foreach ($propDesc->vocabularyValues as $concept) {
                     foreach ($concept->concept as $id) {
                         $tmp[$id] = $concept->uri;
@@ -126,7 +141,7 @@ class MetadataChecker {
 #                    $this->checkClass($sbjMeta, $classDesc, $errors);
 #                }
                 $tmp           = new DatasetNode($sbj);
-                $doorkeeper    = new Doorkeeper($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, null, $this->log);
+                $doorkeeper    = new Doorkeeper($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, $this->log);
                 $doorkeeperErr = array_merge(
                     $doorkeeper->runTests(PreCheckAttribute::class, throwException: false),
                     $doorkeeper->runTests(CheckAttribute::class, throwException: false)
@@ -146,6 +161,10 @@ class MetadataChecker {
         return $noErrors;
     }
 
+    /**
+     * 
+     * @param array<DoorkeeperException|string> $errors
+     */
     public function checkClass(DatasetInterface $sbjMeta,
                                ClassDesc | string $class, array &$errors): void {
         $classDesc     = $class instanceof ClassDesc ? $class : $this->ontology->getClass($class);
@@ -186,13 +205,15 @@ class MetadataChecker {
                     }
                     $langs[$lang] = true;
                 }
-                if ($propDesc->uri === $this->schema->id) {
+                if ($propDesc->uri === (string) $this->schema->id) {
+                    /** @var NamedNodeInterface $value */
                     $this->checkNamedEntity($value, false, $propDesc, $errors);
                 } elseif (!empty($propDesc->vocabs)) {
                     if (!isset($this->vocabularies[$propDesc->uri][(string) $value])) {
                         $errors[] = "$propDesc->uri value $value does not match the controlled vocabulary";
                     }
                 } elseif (count(array_intersect($propDesc->range, array_keys($this->checkRanges))) > 0) {
+                    /** @var NamedNodeInterface $value */
                     $this->checkNamedEntity($value, true, $propDesc, $errors);
                 }
             }
@@ -210,7 +231,6 @@ class MetadataChecker {
     private function checkForLocalEntities(array &$errors,
                                            DatasetInterface $meta): void {
         for ($i = 0; $i < count($errors); $i++) {
-            /** @var DoorkeeperException $error */
             $error = $errors[$i]->getPrevious();
             if ($error instanceof UriNormalizerException && str_starts_with($error->getMessage(), 'Failed to fetch RDF data from ')) {
                 $sbj = DF::namedNode(preg_replace('/ .*/', '', str_replace('Failed to fetch RDF data from ', '', $error->getMessage())));
@@ -222,7 +242,11 @@ class MetadataChecker {
         }
     }
 
-    private function checkNamedEntity(NamedNode $value, bool $resolve,
+    /**
+     * 
+     * @param array<DoorkeeperException|string> $errors
+     */
+    private function checkNamedEntity(NamedNodeInterface $value, bool $resolve,
                                       PropertyDesc $propDesc, array &$errors): void {
         static $tmpl = null;
         $tmpl        ??= new QT(null, new NT(new AT([$this->schema->id, DF::namedNode(RDF::RDF_TYPE)])));

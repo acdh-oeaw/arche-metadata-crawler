@@ -27,6 +27,7 @@
 namespace acdhOeaw\arche\metadataCrawler;
 
 use DateTime;
+use Psr\Log\LoggerInterface;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
@@ -39,6 +40,7 @@ use quickRdf\DataFactory as DF;
 use quickRdf\NamedNode;
 use quickRdf\Literal;
 use acdhOeaw\arche\lib\schema\PropertyDesc;
+use acdhOeaw\arche\metadataCrawler\container\PropertyMapping;
 use acdhOeaw\arche\metadataCrawler\container\WorksheetConfig;
 
 /**
@@ -57,6 +59,7 @@ trait MetadataSpreadsheetTrait {
      */
     private array $valueMaps;
     private bool $horizontal;
+    private LoggerInterface | null $log = null;
 
     private function getValue(Cell $cell, PropertyDesc $propDesc,
                               ?string $defaultLang): NamedNode | Literal | null {
@@ -152,11 +155,11 @@ trait MetadataSpreadsheetTrait {
 
     /**
      * 
-     * @param array<string, PropertyMapping> $propertyMap
+     * @param array<PropertyMapping> $propertyMap
      * @return void
      */
     private function mapReferenceRows(Worksheet $sheet, array $propertyMap,
-                                      string $valueColumn): void {
+                                      int $valueColumn): void {
         $worksheet = $sheet->getParentOrThrow();
         foreach ($propertyMap as $mapping) {
             $validation = $sheet->getCell([$valueColumn, $mapping->row])->getDataValidation();
@@ -170,9 +173,7 @@ trait MetadataSpreadsheetTrait {
         if ($validation->getType() === DataValidation::TYPE_LIST) {
             $formula = $validation->getFormula1();
             if (!str_contains($formula, '!')) {
-                if (isset($this->log)) {
-                    $this->log?->error("\t\tWrong data validation formula in column $mapName: $formula");
-                }
+                $this->log?->error("\t\tWrong data validation formula in column $mapName: $formula");
                 return;
             }
             list($targetSheetName, $targetRange) = explode('!', $formula);
