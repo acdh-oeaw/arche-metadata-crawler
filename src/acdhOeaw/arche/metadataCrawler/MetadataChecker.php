@@ -33,6 +33,7 @@ use rdfInterface\DatasetInterface;
 use quickRdf\DataFactory as DF;
 use quickRdf\Literal;
 use quickRdf\NamedNode;
+use quickRdf\DatasetNode;
 use termTemplates\QuadTemplate as QT;
 use termTemplates\PredicateTemplate as PT;
 use termTemplates\NotTemplate as NT;
@@ -41,6 +42,10 @@ use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\schema\ClassDesc;
 use acdhOeaw\arche\lib\schema\PropertyDesc;
 use acdhOeaw\arche\lib\Schema;
+use acdhOeaw\arche\doorkeeper\DoorkeeperException;
+use acdhOeaw\arche\doorkeeper\PreCheckAttribute;
+use acdhOeaw\arche\doorkeeper\CheckAttribute;
+use acdhOeaw\arche\doorkeeper\Resource as Doorkeeper;
 use acdhOeaw\UriNormalizer;
 use acdhOeaw\UriNormalizerCache;
 use acdhOeaw\UriNormalizerException;
@@ -120,11 +125,15 @@ class MetadataChecker {
 #                    $classDesc = $this->ontology->getClass($class);
 #                    $this->checkClass($sbjMeta, $classDesc, $errors);
 #                }
-                $tmp            = new \quickRdf\DatasetNode($sbj);
-                $doorkeeper     = new \acdhOeaw\arche\doorkeeper\Resource($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, null, $this->log);
-                $doorkepeerErr1 = $doorkeeper->runTests(\acdhOeaw\arche\doorkeeper\PreCheckAttribute::class, throwException: false);
-                $doorkepeerErr2 = $doorkeeper->runTests(\acdhOeaw\arche\doorkeeper\CheckAttribute::class, throwException: false);
-                $errors         = array_merge($errors, array_map(fn($x) => $x->getMessage(), $doorkepeerErr1, $doorkepeerErr2));
+                $tmp           = new DatasetNode($sbj);
+                $doorkeeper    = new Doorkeeper($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, null, $this->log);
+                $doorkeeperErr = array_merge(
+                    $doorkeeper->runTests(PreCheckAttribute::class, throwException: false),
+                    $doorkeeper->runTests(CheckAttribute::class, throwException: false)
+                );
+                $this->checkForLocalEntities($doorkeeperErr, $meta);
+                $doorkeeperErr = array_map(fn($x) => $x->getMessage(), $doorkeeperErr);
+                $errors        = array_merge($errors, $doorkeeperErr);
             }
 
             if (count($errors) > 0) {
@@ -185,6 +194,29 @@ class MetadataChecker {
                     }
                 } elseif (count(array_intersect($propDesc->range, array_keys($this->checkRanges))) > 0) {
                     $this->checkNamedEntity($value, true, $propDesc, $errors);
+                }
+            }
+        }
+    }
+
+    /**
+     * Removes "Failed to fetch RDF data from {URI}" errors related to locally defined entities
+     * (having a given subject or identifier).
+     * 
+     * Doesnt' check if entities themselves are valid (but this is checked in the check() method loop)
+     * 
+     * @param array<DoorkeeperException> $errors
+     */
+    private function checkForLocalEntities(array &$errors,
+                                           DatasetInterface $meta): void {
+        for ($i = 0; $i < count($errors); $i++) {
+            /** @var DoorkeeperException $error */
+            $error = $errors[$i]->getPrevious();
+            if ($error instanceof UriNormalizerException && str_starts_with($error->getMessage(), 'Failed to fetch RDF data from ')) {
+                $sbj = DF::namedNode(preg_replace('/ .*/', '', str_replace('Failed to fetch RDF data from ', '', $error->getMessage())));
+                if ($meta->any(new QT($sbj)) || $meta->any(new PT($this->schema->id, $sbj))) {
+                    $this->log?->debug("Skipping the unresolvable $sbj error because it's defined locally");
+                    unset($errors[$i]);
                 }
             }
         }

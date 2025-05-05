@@ -45,18 +45,28 @@ class MetadataCheckerTest extends TestBase {
      * type, id and title (which already makes a valid Organisation)
      */
     public function testMinimalOrganizationAsObject(): void {
-        $o = DF::namedNode('https://id.acdh.oeaw.ac.at/testOrganisation');
-        $s = DF::namedNode('https://id.acdh.oeaw.ac.at/testResource');
+        $lProp = DF::namedNode('https://vocabs.acdh.oeaw.ac.at/schema#hasLicensor');
+        $o     = DF::namedNode('https://id.acdh.oeaw.ac.at/testOrganisation');
+        $s     = DF::namedNode('https://id.acdh.oeaw.ac.at/testResource');
+
         $d = new Dataset();
         $d->add(DF::quad($o, DF::namedNode(RDF::RDF_TYPE), self::$schema->classes->organisation));
         $d->add(DF::quad($o, self::$schema->id, $o));
         $d->add(DF::quad($o, self::$schema->label, DF::literal('test organisation', 'en')));
         $d->add(DF::quad($s, DF::namedNode(RDF::RDF_TYPE), self::$schema->classes->resource));
-        $d->add(DF::quad($s, DF::namedNode('https://vocabs.acdh.oeaw.ac.at/schema#hasLicensor'), $o));
+        $d->add(DF::quad($s, $lProp, $o));
 
         $mc  = new MetadataChecker(self::$ontology, self::$schema, new Log(self::LOG_FILE));
         $mc->check($d);
         $log = file_get_contents(self::LOG_FILE);
         $this->assertStringNotContainsString('Failed to fetch RDF data', $log);
+
+        $badO = DF::namedNode('https://id.acdh.oeaw.ac.at/notDefined');
+        $d    = new Dataset();
+        $d->add(DF::quad($s, DF::namedNode(RDF::RDF_TYPE), self::$schema->classes->resource));
+        $d->add(DF::quad($s, $lProp, $badO));
+        $mc->check($d);
+        $log  = file_get_contents(self::LOG_FILE);
+        $this->assertStringContainsString("Failed to fetch RDF data from $badO", $log);
     }
 }
