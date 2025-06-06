@@ -18,7 +18,8 @@
         "acdh-oeaw/arche-lib-ingest": "^4 | ^5",
         "phpoffice/phpspreadsheet": "^1.29",
         "acdh-oeaw/arche-doorkeeper": "^6.0.1",
-        "zozlak/logging": "^1.0"
+        "zozlak/logging": "^1.0",
+        "zozlak/guzzle-proxy-client": "^1.0"
     },
     "autoload": {
         "psr-4": {

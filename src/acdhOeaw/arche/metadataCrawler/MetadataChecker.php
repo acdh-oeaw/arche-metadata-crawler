@@ -27,8 +27,7 @@
 namespace acdhOeaw\arche\metadataCrawler;
 
 use Psr\Log\LoggerInterface;
-use GuzzleHttp\Client;
-use quickRdf\Dataset;
+use zozlak\ProxyClient;
 use rdfInterface\DatasetInterface;
 use rdfInterface\NamedNodeInterface;
 use quickRdf\DataFactory as DF;
@@ -91,7 +90,7 @@ class MetadataChecker {
             $this->checkRanges[$range] = array_map(fn($x) => (string) $x, iterator_to_array($nmsps));
         }
 
-        $client            = new Client();
+        $client            = ProxyClient::factory();
         $cache             = new UriNormalizerCache();
         $this->normalizers = [
             '' => new UriNormalizer(cache: $cache),
