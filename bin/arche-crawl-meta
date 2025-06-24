@@ -89,6 +89,9 @@ try {
     $noErrors = true;
     if (!$args->noCheck) {
         if (!empty($args->errorLog)) {
+            if (file_exists($args->errorLog)) {
+                unlink($args->errorLog);
+            }
             $errLog = new Log($args->errorLog, LogLevel::ERROR, "{MESSAGE}");
             $errLog->error('resource;error message');
             $log->addLog($errLog);
