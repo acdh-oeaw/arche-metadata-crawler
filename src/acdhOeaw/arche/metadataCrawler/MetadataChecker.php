@@ -62,16 +62,19 @@ class MetadataChecker {
     private Ontology $ontology;
     private Schema $schema;
     private LoggerInterface | null $log;
+
     /**
      * 
      * @var array<string, UriNormalizer>
      */
     private array $normalizers;
+
     /**
      * 
      * @var array<string, array<string>>
      */
     private array $checkRanges;
+
     /**
      * 
      * @var array<string, array<string, string>>
@@ -153,7 +156,7 @@ class MetadataChecker {
             if (count($errors) > 0) {
                 $noErrors = false;
                 foreach ($errors as $e) {
-                    $this->log?->error("$sbj;$e");
+                    $this->log?->error($sbj . ';"' . str_replace('"', '""', $e) . '"');
                 }
             }
         }
