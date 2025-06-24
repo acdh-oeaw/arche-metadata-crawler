@@ -34,6 +34,7 @@ require_once "$composerDir/vendor/autoload.php";
 use acdhOeaw\arche\lib\schema\Ontology;
 use acdhOeaw\arche\lib\Repo;
 use zozlak\logging\Log;
+use zozlak\logging\LogMultiplexer;
 use Psr\Log\LogLevel;
 use quickRdf\Dataset;
 use quickRdf\DataFactory;
@@ -45,12 +46,22 @@ use acdhOeaw\arche\metadataCrawler\MetadataCrawlerException;
 $parser = new ArgumentParser();
 $parser->addArgument('--repositoryUrl', default: 'https://arche.acdh.oeaw.ac.at/api/');
 $parser->addArgument('--logFile', default: 'php://stdout');
+$parser->addArgument('--errorLog', help: 'Path to a CSV log storing metadata check errors');
 $parser->addArgument('--verbose', action: ArgumentParser::ACTION_STORE_TRUE);
 $parser->addArgument('--tmpDir', default: '/tmp');
 $parser->addArgument('metadataFile');
 $args   = $parser->parseArgs();
 
-$log = new Log($args->logFile, $args->verbose ? LogLevel::DEBUG : LogLevel::INFO);
+$log = new LogMultiplexer();
+$log->addLog(new Log($args->logFile, $args->verbose ? LogLevel::DEBUG : LogLevel::INFO));
+if (!empty($args->errorLog)) {
+    if (file_exists($args->errorLog)) {
+        unlink($args->errorLog);
+    }
+    $errLog = new Log($args->errorLog, LogLevel::ERROR, "{MESSAGE}");
+    $errLog->error('resource;error message');
+    $log->addLog($errLog);
+}
 
 if (!file_exists($args->metadataFile)) {
     $log->error("metadata file doesn't exist");
