@@ -235,7 +235,7 @@ class MetadataChecker {
         for ($i = 0; $i < count($errors); $i++) {
             $error = $errors[$i]->getPrevious();
             if ($error instanceof UriNormalizerException && str_starts_with($error->getMessage(), 'Failed to fetch RDF data from ')) {
-                $sbj = DF::namedNode(preg_replace('/ .*/', '', str_replace('Failed to fetch RDF data from ', '', $error->getMessage())));
+                $sbj = DF::namedNode(urldecode(preg_replace('/ .*/', '', str_replace('Failed to fetch RDF data from ', '', $error->getMessage()))));
                 if ($meta->any(new QT($sbj)) || $meta->any(new PT($this->schema->id, $sbj))) {
                     $this->log?->debug("Skipping the unresolvable $sbj error because it's defined locally");
                     unset($errors[$i]);
