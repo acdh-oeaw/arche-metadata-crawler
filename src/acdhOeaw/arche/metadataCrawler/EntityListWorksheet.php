@@ -205,7 +205,7 @@ class EntityListWorksheet {
         $entityRow      = null;
         $uniqueLabels   = [];
         $entities       = [];
-        for ($row = $cfg->headerRow + 1; $row < $highestDataRow; $row++) {
+        for ($row = $cfg->headerRow + 1; $row <= $highestDataRow; $row++) {
             $label = (string) $sheet->getCell($labelCol . $row)->getCalculatedValue();
             $id    = (string) $sheet->getCell($idCol . $row)->getCalculatedValue();
             if (!empty($label) && $label !== $prevLabel && $id !== $prevId) {
