@@ -114,13 +114,13 @@ trait MetadataSpreadsheetTrait {
             } elseif ($isDateTime) {
                 return DF::literal($value->format(DateTime::ISO8601), null, RDF::XSD_DATE_TIME);
             } elseif ($propDesc->type === RDF::OWL_DATATYPE_PROPERTY) {
-                $lang  = $defaultLang;
-                $value = explode('@', $value);
-                if (count($value) > 1) {
-                    $lang = array_pop($value);
-                    $lang = preg_replace('/[[:blank:]]+$/u', '', $lang);
+                $lang = $defaultLang;
+                if (preg_match('/@[a-z]{2,3}[[:blank:]]*$/u', $value)) {
+                    $value = explode('@', $value);
+                    $lang  = array_pop($value);
+                    $lang  = preg_replace('/[[:blank:]]+$/u', '', $lang);
+                    $value = implode('@', $value);
                 }
-                $value = implode('@', $value);
                 return DF::literal($value, $lang);
             }
         } elseif (isset($this->valueMaps[$coordinate])) {
