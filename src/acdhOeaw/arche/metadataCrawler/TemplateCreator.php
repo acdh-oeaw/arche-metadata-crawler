@@ -175,7 +175,6 @@ class TemplateCreator {
         $properties = array_filter($properties, fn(PropertyDesc $x) => !$x->automatedFill && 0 === count(array_intersect($x->property, self::SKIP_PROPERTIES)));
         $orderFn    = fn(PropertyDesc $x) => -999999 * in_array($labelProp, $x->property) - 888888 * in_array($idProp, $x->property) - 777777 * ($x->min > 0) - 666666 * $x->recommendedClass + $x->ordering;
         usort($properties, fn(PropertyDesc $a, PropertyDesc $b) => $orderFn($a) <=> $orderFn($b));
-        /** @phpstan-ignore arrayValues.list */
         $properties = array_values($properties);
 
         $shortName = $this->shortenUri($class);
@@ -309,7 +308,6 @@ class TemplateCreator {
             $properties = $classDesc->getProperties();
             $properties = array_filter($properties, fn(PropertyDesc $x) => !$x->automatedFill && 0 === count(array_intersect($x->property, self::SKIP_PROPERTIES)));
             usort($properties, fn(PropertyDesc $a, PropertyDesc $b) => $orderFn($a) <=> $orderFn($b));
-            /** @phpstan-ignore arrayValues.list */
             $properties = array_values($properties);
 
             $shortName = $this->shortenUri($class);

@@ -144,12 +144,11 @@ trait MetadataSpreadsheetTrait {
 
     private function mapReferenceCols(WorksheetConfig $cfg): void {
         $sheet           = $cfg->worksheet;
-        $worksheet       = $sheet->getParentOrThrow();
         $this->valueMaps = [];
         $row             = (string) ($cfg->headerRow + 1);
         foreach (array_keys($cfg->propertyMap) as $col) {
             $validation = $sheet->getCell($col . $row)->getDataValidation();
-            $this->mapReferenceCells($worksheet, $validation, $col);
+            $this->mapReferenceCells($sheet, $validation, $col);
         }
     }
 
@@ -160,24 +159,29 @@ trait MetadataSpreadsheetTrait {
      */
     private function mapReferenceRows(Worksheet $sheet, array $propertyMap,
                                       int $valueColumn): void {
-        $worksheet = $sheet->getParentOrThrow();
         foreach ($propertyMap as $mapping) {
             $validation = $sheet->getCell([$valueColumn, $mapping->row])->getDataValidation();
-            $this->mapReferenceCells($worksheet, $validation, (string) $mapping->row);
+            $this->mapReferenceCells($sheet, $validation, (string) $mapping->row);
         }
     }
 
-    private function mapReferenceCells(Spreadsheet $worksheet,
+    private function mapReferenceCells(Worksheet $sheet,
                                        DataValidation $validation,
                                        string $mapName): void {
         if ($validation->getType() === DataValidation::TYPE_LIST) {
             $formula = $validation->getFormula1();
-            if (!str_contains($formula, '!')) {
+            if (!str_contains($formula, '!') && !str_starts_with($formula, '$A')) {
                 $this->log?->error("\t\tWrong data validation formula in column $mapName: $formula");
                 return;
             }
-            list($targetSheetName, $targetRange) = explode('!', $formula);
-            $targetSheet               = $worksheet->getSheetByName($targetSheetName);
+            if (str_contains($formula, '!')) {
+                list($targetSheetName, $targetRange) = explode('!', $formula);
+                $targetSheet = $sheet->getParent()->getSheetByName($targetSheetName);
+            } else {
+                $targetRange = $formula;
+                $targetSheetName = $sheet->getTitle();
+                $targetSheet = $sheet;
+            }
             $matches                   = null;
             preg_match('`^[$]?([A-Z]+)[$]?([0-9]+)+:[$]?[A-Z]+[$]?([0-9]+)$`', $targetRange, $matches);
             list(, $labelCol, $startRow, $endRow) = $matches;
