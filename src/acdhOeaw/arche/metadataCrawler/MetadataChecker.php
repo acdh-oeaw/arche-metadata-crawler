@@ -66,18 +66,21 @@ class MetadataChecker {
     /**
      * 
      * @var array<string, UriNormalizer>
+     * @phpstan-ignore property.onlyWritten
      */
     private array $normalizers;
 
     /**
      * 
      * @var array<string, array<string>>
+     * @phpstan-ignore property.onlyWritten
      */
     private array $checkRanges;
 
     /**
      * 
      * @var array<string, array<string, string>>
+     * @phpstan-ignore property.onlyWritten
      */
     private array $vocabularies;
     private DatasetInterface $meta;

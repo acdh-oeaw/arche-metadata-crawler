@@ -59,6 +59,7 @@ class MetadataVertical implements IteratorAggregate {
 
     private Ontology $ontology;
 
+    // @phpstan-ignore property.onlyWritten
     private Schema $schema;
     private FileId $idgen;
     private Dataset $meta;
