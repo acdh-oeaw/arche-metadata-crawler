@@ -42,7 +42,6 @@ use Psr\Log\LoggerInterface;
  */
 class EntitiesDatabase {
 
-    /** @phpstan-ignore property.onlyWritten */
     private Ontology $ontology;
     private Schema $schema;
     private LoggerInterface | null $log;
