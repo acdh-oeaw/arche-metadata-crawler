@@ -59,7 +59,6 @@ class MetadataVertical implements IteratorAggregate {
 
     private Ontology $ontology;
 
-    /** @phpstan-ignore property.onlyWritten */
     private Schema $schema;
     private FileId $idgen;
     private Dataset $meta;
@@ -89,11 +88,12 @@ class MetadataVertical implements IteratorAggregate {
         $this->horizontal = false;
 
         $spreadsheet = IOFactory::load($path);
-        $sheet       = $spreadsheet->getSheet(0);
-        $this->log?->info("Trying to map $path as a vertical metadata file");
-        if ($this->mapStructure($sheet, $defaultLang)) {
-            $this->log?->info("Reading $path as a vertical metadata file");
-            $this->readMetadata($sheet);
+        foreach($spreadsheet->getWorksheetIterator() as $n => $sheet) {
+            $this->log?->info("Trying to map $path sheet $n as a vertical metadata file");
+            if ($this->mapStructure($sheet, $defaultLang)) {
+                $this->log?->info("Reading $path as a vertical metadata file");
+                $this->readMetadata($sheet);
+            }
         }
     }
 
