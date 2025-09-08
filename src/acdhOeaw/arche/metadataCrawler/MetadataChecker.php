@@ -138,10 +138,6 @@ class MetadataChecker {
             } elseif (count($sbjClasses) > 1) {
                 $errors[] = "multiple rdf:types: " . implode(', ', $sbjClasses);
             } else {
-#                foreach ($sbjClasses as $class) {
-#                    $classDesc = $this->ontology->getClass($class);
-#                    $this->checkClass($sbjMeta, $classDesc, $errors);
-#                }
                 $tmp           = new DatasetNode($sbj);
                 $doorkeeper    = new Doorkeeper($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, $this->log);
                 $doorkeeperErr = array_merge(
@@ -164,65 +160,6 @@ class MetadataChecker {
     }
 
     /**
-     * 
-     * @param array<DoorkeeperException|string> $errors
-     */
-    public function checkClass(DatasetInterface $sbjMeta,
-                               ClassDesc | string $class, array &$errors): void {
-        $classDesc     = $class instanceof ClassDesc ? $class : $this->ontology->getClass($class);
-        $sbjProperties = $sbjMeta->listPredicates()->getValues();
-        $sbjProperties = array_filter($sbjProperties, fn($x) => (string) $x !== RDF::RDF_TYPE);
-
-        // required by class
-        $missing = array_filter(
-            $classDesc->getProperties(),
-                                      fn(PropertyDesc $x) => $x->min > 0 && !$x->automatedFill && empty($x->defaultValue) && count(array_intersect($x->property, $sbjProperties)) === 0
-        );
-        foreach ($missing as $i) {
-            $errors[] = "required property $i->uri is missing";
-        }
-
-        // existing properties
-        foreach ($sbjProperties as $sbjProp) {
-            if (!isset($classDesc->properties[(string) $sbjProp])) {
-                $errors[] = "unknown property $sbjProp used";
-                continue;
-            }
-            /* @var $propDesc PropertyDesc */
-            $propDesc  = $classDesc->properties[(string) $sbjProp];
-            $sbjValues = $sbjMeta->listObjects(new PT($sbjProp));
-            $langs     = [];
-            foreach ($sbjValues as $value) {
-                $valueType = $value instanceof Literal ? RDF::OWL_DATATYPE_PROPERTY : RDF::OWL_OBJECT_PROPERTY;
-                if ($propDesc->type != $valueType) {
-                    $errors[] = "wrong type of value for a $valueType property $propDesc->uri";
-                    continue;
-                }
-                if ($propDesc->langTag && $value instanceof Literal) {
-                    $lang = (string) $value->getLang();
-                    if ($lang === '') {
-                        $errors[] = "value $value of property $propDesc->uri misses the language tag";
-                    } elseif (isset($langs[$lang]) && $propDesc->max === 1) {
-                        $errors[] = "value $value of property $propDesc->uri has duplicated lang tag $lang";
-                    }
-                    $langs[$lang] = true;
-                }
-                if ($propDesc->uri === (string) $this->schema->id) {
-                    /** @var NamedNodeInterface $value */
-                    $this->checkNamedEntity($value, false, $propDesc, $errors);
-                } elseif (!empty($propDesc->vocabs)) {
-                    if (!isset($this->vocabularies[$propDesc->uri][(string) $value])) {
-                        $errors[] = "$propDesc->uri value $value does not match the controlled vocabulary";
-                    }
-                } elseif (count(array_intersect($propDesc->range, array_keys($this->checkRanges))) > 0) {
-                    /** @var NamedNodeInterface $value */
-                    $this->checkNamedEntity($value, true, $propDesc, $errors);
-                }
-            }
-        }
-    }
-
-    /**
      * Removes "Failed to fetch RDF data from {URI}" errors related to locally defined entities
      * (having a given subject or identifier).
      * 
@@ -240,39 +177,6 @@ class MetadataChecker {
                     $this->log?->debug("Skipping the unresolvable $sbj error because it's defined locally");
                     unset($errors[$i]);
                 }
-            }
-        }
-    }
-
-    /**
-     * 
-     * @param array<DoorkeeperException|string> $errors
-     */
-    private function checkNamedEntity(NamedNodeInterface $value, bool $resolve,
-                                      PropertyDesc $propDesc, array &$errors): void {
-        static $tmpl = null;
-        $tmpl        ??= new QT(null, new NT(new AT([$this->schema->id, DF::namedNode(RDF::RDF_TYPE)])));
-        if ($propDesc->uri === (string) $this->schema->id) {
-            $norms = [$this->normalizers['']];
-        } else {
-            $norms = array_filter($this->normalizers, fn($key) => in_array($key, $propDesc->range), ARRAY_FILTER_USE_KEY);
-        }
-        foreach ($norms as $norm) {
-            try {
-                $value = $norm->normalize($value, true);
-                if ($resolve) {
-                    try {
-                        $norm->resolve($value);
-                    } catch (UriNormalizerException $ex) {
-                        if ($this->meta->none($tmpl->withSubject($value))) {
-                            $errors[] = $propDesc->uri . ' value ' . $value . ': ' . $ex->getMessage();
-                        } else {
-                            $this->log?->debug("Could not resolve $value but it exists as a subject in the output metadata.");
-                        }
-                    }
-                }
-            } catch (UriNormalizerException $ex) {
-                $errors[] = $propDesc->uri . ' value ' . $value . ': ' . $ex->getMessage();
             }
         }
     }
