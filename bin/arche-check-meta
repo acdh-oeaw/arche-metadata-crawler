@@ -40,11 +40,14 @@ use quickRdf\Dataset;
 use quickRdf\DataFactory;
 use zozlak\argparse\ArgumentParser;
 use quickRdfIo\Util as RdfIoUtil;
+use acdhOeaw\UriNormalizerRetryConfig;
 use acdhOeaw\arche\metadataCrawler\MetadataChecker;
 use acdhOeaw\arche\metadataCrawler\MetadataCrawlerException;
 
 $parser = new ArgumentParser();
 $parser->addArgument('--repositoryUrl', default: 'https://arche.acdh.oeaw.ac.at/api/');
+$parser->addArgument('--retryAttempts', default: 3);
+$parser->addArgument('--retryDelay', default: 2);
 $parser->addArgument('--logFile', default: 'php://stdout');
 $parser->addArgument('--errorLog', help: 'Path to a CSV log storing metadata check errors');
 $parser->addArgument('--verbose', action: ArgumentParser::ACTION_STORE_TRUE);
@@ -84,7 +87,8 @@ try {
     $log->info("----------------------------------------");
     $log->info("Checking metadata");
     $log->info("----------------------------------------");
-    $checker  = new MetadataChecker($ontology, $repo->getSchema(), $log);
+    $retryCfg = new UriNormalizerRetryConfig($args->retryAttempts, $args->retryDelay, UriNormalizerRetryConfig::SCALE_POWER);
+    $checker  = new MetadataChecker($ontology, $repo->getSchema(), $log, $retryCfg);
     $noErrors = $checker->check($meta, false);
 
     exit($noErrors ? 0 : 2);

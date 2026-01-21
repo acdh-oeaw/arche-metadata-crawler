@@ -47,6 +47,7 @@ use acdhOeaw\arche\doorkeeper\PreCheckAttribute;
 use acdhOeaw\arche\doorkeeper\CheckAttribute;
 use acdhOeaw\arche\doorkeeper\Resource as Doorkeeper;
 use acdhOeaw\UriNormalizer;
+use acdhOeaw\UriNormalizerRetryConfig;
 use acdhOeaw\UriNormalizerCache;
 use acdhOeaw\UriNormalizerException;
 use acdhOeaw\UriNormRules;
@@ -86,7 +87,8 @@ class MetadataChecker {
     private DatasetInterface $meta;
 
     public function __construct(Ontology $ontology, Schema $schema,
-                                LoggerInterface | null $log = null) {
+                                LoggerInterface | null $log = null,
+                                ?UriNormalizerRetryConfig $retryCfg = null) {
         $this->ontology = $ontology;
         $this->schema   = $schema;
         $this->log      = $log;
@@ -98,13 +100,14 @@ class MetadataChecker {
 
         $client            = ProxyClient::factory();
         $cache             = new UriNormalizerCache();
+        $retryCfg          ??= new UriNormalizerRetryConfig(3, 2, UriNormalizerRetryConfig::SCALE_POWER);
         $this->normalizers = [
-            '' => new UriNormalizer(cache: $cache),
+            '' => new UriNormalizer(cache: $cache, retryCfg: $retryCfg),
         ];
         /** @phpstan-ignore property.notFound */
         foreach ($schema->checkRanges as $class => $ranges) {
             $rules                     = UriNormRules::getRules(array_map(fn($x) => (string) $x, iterator_to_array($ranges)));
-            $this->normalizers[$class] = new UriNormalizer($rules, '', $client, $cache);
+            $this->normalizers[$class] = new UriNormalizer($rules, '', $client, $cache, retryCfg: $retryCfg);
         }
 
         foreach ($this->ontology->getProperties() as $propDesc) {
