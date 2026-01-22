@@ -67,6 +67,6 @@ class MetadataCheckerTest extends TestBase {
         $d->add(DF::quad($s, $lProp, $badO));
         $mc->check($d);
         $log  = file_get_contents(self::LOG_FILE);
-        $this->assertStringContainsString("Failed to fetch RDF data from $badO", $log);
+        $this->assertStringContainsString("Failed to fetch data from $badO with status code 404", $log);
     }
 }
