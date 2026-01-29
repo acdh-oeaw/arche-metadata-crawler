@@ -38,6 +38,7 @@ use zozlak\logging\LogMultiplexer;
 use Psr\Log\LogLevel;
 use zozlak\RdfConstants as RDF;
 use zozlak\argparse\ArgumentParser;
+use acdhOeaw\UriNormalizerRetryConfig;
 use rdfInterface\QuadInterface;
 use quickRdf\RdfNamespace;
 use quickRdfIo\Util as RdfIoUtil;
