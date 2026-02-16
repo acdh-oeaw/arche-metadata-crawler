@@ -19,7 +19,8 @@
         "phpoffice/phpspreadsheet": "^1.29",
         "acdh-oeaw/arche-doorkeeper": "^6.12",
         "zozlak/logging": "^1.0",
-        "zozlak/guzzle-proxy-client": "^1.0"
+        "zozlak/guzzle-proxy-client": "^1.0",
+        "acdh-oeaw/uri-normalizer": "^3.4"
     },
     "autoload": {
         "psr-4": {
