@@ -46,10 +46,10 @@ use acdhOeaw\arche\doorkeeper\DoorkeeperException;
 use acdhOeaw\arche\doorkeeper\PreCheckAttribute;
 use acdhOeaw\arche\doorkeeper\CheckAttribute;
 use acdhOeaw\arche\doorkeeper\Resource as Doorkeeper;
-use acdhOeaw\UriNormalizer;
-use acdhOeaw\UriNormalizerRetryConfig;
-use acdhOeaw\UriNormalizerCache;
-use acdhOeaw\UriNormalizerException;
+use acdhOeaw\uriNormalizer\UriNormalizer;
+use acdhOeaw\uriNormalizer\UriNormalizerResolveConfig;
+use acdhOeaw\uriNormalizer\UriNormalizerCache;
+use acdhOeaw\uriNormalizer\UriNormalizerException;
 use acdhOeaw\UriNormRules;
 use zozlak\RdfConstants as RDF;
 
@@ -59,6 +59,8 @@ use zozlak\RdfConstants as RDF;
  * @author zozlak
  */
 class MetadataChecker {
+
+    const URI_NORMALIZER_TTL = 'P3D';
 
     private Ontology $ontology;
     private Schema $schema;
@@ -88,7 +90,7 @@ class MetadataChecker {
 
     public function __construct(Ontology $ontology, Schema $schema,
                                 LoggerInterface | null $log = null,
-                                ?UriNormalizerRetryConfig $retryCfg = null) {
+                                ?UriNormalizerResolveConfig $resolveCfg = null) {
         $this->ontology = $ontology;
         $this->schema   = $schema;
         $this->log      = $log;
@@ -100,14 +102,14 @@ class MetadataChecker {
 
         $client            = ProxyClient::factory();
         $cache             = new UriNormalizerCache();
-        $retryCfg          ??= new UriNormalizerRetryConfig(3, 2, UriNormalizerRetryConfig::SCALE_POWER);
+        $resolveCfg        ??= new UriNormalizerResolveConfig(3, 2, UriNormalizerResolveConfig::SCALE_POWER, ttl: self::URI_NORMALIZER_TTL);
         $this->normalizers = [
-            '' => new UriNormalizer(cache: $cache, retryCfg: $retryCfg),
+            '' => new UriNormalizer(cache: $cache, retryCfg: $resolveCfg),
         ];
         /** @phpstan-ignore property.notFound */
         foreach ($schema->checkRanges as $class => $ranges) {
             $rules                     = UriNormRules::getRules(array_map(fn($x) => (string) $x, iterator_to_array($ranges)));
-            $this->normalizers[$class] = new UriNormalizer($rules, '', $client, $cache, retryCfg: $retryCfg);
+            $this->normalizers[$class] = new UriNormalizer($rules, '', $client, $cache, retryCfg: $resolveCfg);
         }
 
         foreach ($this->ontology->getProperties() as $propDesc) {
