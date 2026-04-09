@@ -12,7 +12,7 @@ jobs:
     - name: composer
       run: composer update
     - name: phpstan
-      run: vendor/bin/phpstan analyze -l 6 src
+      run: vendor/bin/phpstan analyze -l 6 src tests bin
     - name: integration tests
       run: |
         bin/arche-create-metadata-template /tmp all

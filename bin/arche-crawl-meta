@@ -38,7 +38,7 @@ use zozlak\logging\LogMultiplexer;
 use Psr\Log\LogLevel;
 use zozlak\RdfConstants as RDF;
 use zozlak\argparse\ArgumentParser;
-use acdhOeaw\UriNormalizerRetryConfig;
+use acdhOeaw\uriNormalizer\UriNormalizerResolveConfig;
 use rdfInterface\QuadInterface;
 use quickRdf\RdfNamespace;
 use quickRdfIo\Util as RdfIoUtil;
@@ -103,7 +103,7 @@ try {
         $log->info("----------------------------------------");
         $log->info("Checking merged metadata");
         $log->info("----------------------------------------");
-        $retryCfg = new UriNormalizerRetryConfig($args->retryAttempts, $args->retryDelay, UriNormalizerRetryConfig::SCALE_POWER);
+        $retryCfg = new UriNormalizerResolveConfig($args->retryAttempts, $args->retryDelay, UriNormalizerResolveConfig::SCALE_POWER);
         $checker  = new MetadataChecker($ontology, $repo->getSchema(), $log, $retryCfg);
         $noErrors = $checker->check($meta, !$args->noCheckProgress);
         if (!$noErrors) {
