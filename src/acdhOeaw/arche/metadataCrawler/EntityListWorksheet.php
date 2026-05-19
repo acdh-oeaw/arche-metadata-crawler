@@ -152,9 +152,9 @@ class EntityListWorksheet {
             $matchingClasses = array_filter($matchingClasses, function (ClassDesc $class) use ($properties,
                                                                                                $propFilter): bool {
                 $missing = new SplObjectStorage();
-                array_map(fn($x) => $missing->attach($x), array_filter($class->properties, $propFilter));
+                array_map(fn($x) => $missing->offsetSet($x), array_filter($class->properties, $propFilter));
                 foreach ($properties as $i) {
-                    $missing->detach($class->properties[$i]);
+                    $missing->offsetUnset($class->properties[$i]);
                 }
                 return $missing->count() === 0;
             });

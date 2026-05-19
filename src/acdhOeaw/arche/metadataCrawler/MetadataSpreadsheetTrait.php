@@ -178,15 +178,15 @@ trait MetadataSpreadsheetTrait {
                 list($targetSheetName, $targetRange) = explode('!', $formula);
                 $targetSheet = $sheet->getParent()->getSheetByName($targetSheetName);
             } else {
-                $targetRange = $formula;
+                $targetRange     = $formula;
                 $targetSheetName = $sheet->getTitle();
-                $targetSheet = $sheet;
+                $targetSheet     = $sheet;
             }
             $matches                   = null;
             preg_match('`^[$]?([A-Z]+)[$]?([0-9]+)+:[$]?[A-Z]+[$]?([0-9]+)$`', $targetRange, $matches);
             list(, $labelCol, $startRow, $endRow) = $matches;
             $idCol                     = $labelCol;
-            $idCol++; // works in PHP, even for multichar values (wow!)
+            $idCol                     = str_increment($idCol);
             $this->valueMaps[$mapName] = [];
             for ($targetRow = $startRow; $targetRow < $endRow; $targetRow++) {
                 try {

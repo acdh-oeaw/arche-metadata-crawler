@@ -6,13 +6,22 @@ on:
 jobs:
   phpunit:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: [8.3, 8.4, 8.5]
     steps:
     - uses: actions/checkout@v6
-    #- uses: mxschmitt/action-tmate@v3
+    - uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php }}
+        coverage: xdebug
+      env:
+        fail-fast: true
     - name: composer
       run: composer update
     - name: phpstan
-      run: vendor/bin/phpstan analyze -l 6 src tests bin
+      run: vendor/bin/phpstan analyze -l 6 src tests bin/*
+    #- uses: mxschmitt/action-tmate@v3
     - name: integration tests
       run: |
         bin/arche-create-metadata-template /tmp all
@@ -22,8 +31,9 @@ jobs:
     - name: unit tests
       run: |
         mkdir -p build/logs
-        XDEBUG_MODE=coverage vendor/bin/phpunit
+        XDEBUG_MODE=coverage vendor/bin/phpunit --display-all-issues
     - name: coveralls
+      if: ${{ matrix.php == 8.5 }}
       run: |
         export COVERALLS_RUN_LOCALLY=1
         export COVERALLS_REPO_TOKEN=${{ secrets.coverallsToken }}

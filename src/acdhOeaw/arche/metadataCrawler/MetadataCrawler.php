@@ -145,7 +145,7 @@ class MetadataCrawler {
         foreach ($meta as $quad) {
             /* @var $quad Quad */
             $sbj = $quad->getSubject();
-            if ($checked->contains($sbj)) {
+            if ($checked->offsetExists($sbj)) {
                 $this->metaSecondary->add($quad);
             } else {
                 if ($this->metaPrimary->any(new QT($quad->getSubject()))) {
@@ -153,7 +153,7 @@ class MetadataCrawler {
                 } else {
                     $this->log?->warning("\t$sbj is missing in the filechecker output");
                 }
-                $checked->attach($sbj);
+                $checked->offsetSet($sbj);
             }
         }
         return count($checked);
@@ -235,24 +235,24 @@ class MetadataCrawler {
             foreach ($ids as $id) {
                 foreach ($this->metaSecondary->getIterator(new QT($id)) as $quad) {
                     $metaTmp->add($quad);
-                    $addedProps->attach($quad->getPredicate());
+                    $addedProps->offsetSet($quad->getPredicate());
                 }
             }
             foreach ($classes as $class) {
                 foreach (array_filter($graphs, fn($x) => str_starts_with($sbj->getValue(), $x->getValue())) as $graph) {
                     $propsToAdd = [];
                     foreach ($this->metaSecondary->getIterator(new QT($class, graph: $graph)) as $quad) {
-                        if (!$addedProps->contains($quad->getPredicate())) {
+                        if (!$addedProps->offsetExists($quad->getPredicate())) {
                             $metaTmp->add($quad->withSubject($sbj));
                             $propsToAdd[] = $quad->getPredicate();
                         }
                     }
-                    array_map(fn($x) => $addedProps->attach($x), $propsToAdd);
+                    array_map(fn($x) => $addedProps->offsetSet($x), $propsToAdd);
                 }
             }
             foreach ($graphs as $graph) {
                 foreach ($this->metaSecondary->getIterator($thingTmpl->withGraph($graph)) as $quad) {
-                    if (!$addedProps->contains($quad->getPredicate())) {
+                    if (!$addedProps->offsetExists($quad->getPredicate())) {
                         $metaTmp->add($quad->withSubject($sbj));
                     }
                 }
@@ -323,17 +323,17 @@ class MetadataCrawler {
         // a subject already existing in the soretedMeta
         $included = new SplObjectStorage();
         foreach($sortedMeta->listSubjects() as $i) {
-            $included->attach($i);
+            $included->offsetSet($i);
         }
         foreach ($this->metaSecondary as $i) {
             $sbj = $i->getSubject();
             $obj = $i->getObject();
-            if (!str_starts_with((string) $sbj, $this->schema->namespaces->id) || $included->contains($sbj) || !$included->contains($obj)) {
+            if (!str_starts_with((string) $sbj, $this->schema->namespaces->id) || $included->offsetExists($sbj) || !$included->offsetExists($obj)) {
                 continue;
             }
             echo "Adding $sbj because of $i\n";
             $sortedMeta->add($this->metaSecondary->getIterator(new QT($sbj)));
-            $included->attach($sbj);
+            $included->offsetSet($sbj);
         }
         
         return $sortedMeta;

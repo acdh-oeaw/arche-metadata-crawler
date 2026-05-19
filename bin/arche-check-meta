@@ -31,8 +31,7 @@ while ($composerDir !== false && !file_exists("$composerDir/vendor")) {
 }
 require_once "$composerDir/vendor/autoload.php";
 
-use acdhOeaw\arche\lib\schema\Ontology;
-use acdhOeaw\arche\lib\Repo;
+use acdhOeaw\arche\lib\RepoDb;
 use zozlak\logging\Log;
 use zozlak\logging\LogMultiplexer;
 use Psr\Log\LogLevel;
@@ -41,6 +40,7 @@ use quickRdf\DataFactory;
 use zozlak\argparse\ArgumentParser;
 use quickRdfIo\Util as RdfIoUtil;
 use acdhOeaw\uriNormalizer\UriNormalizerResolveConfig;
+use acdhOeaw\arche\metadataCrawler\InitUtil;
 use acdhOeaw\arche\metadataCrawler\MetadataChecker;
 use acdhOeaw\arche\metadataCrawler\MetadataCrawlerException;
 
@@ -51,7 +51,8 @@ $parser->addArgument('--retryDelay', default: 2);
 $parser->addArgument('--logFile', default: 'php://stdout');
 $parser->addArgument('--errorLog', help: 'Path to a CSV log storing metadata check errors');
 $parser->addArgument('--verbose', action: ArgumentParser::ACTION_STORE_TRUE);
-$parser->addArgument('--tmpDir', default: '/tmp');
+$parser->addArgument('--tmpDir', default: sys_get_temp_dir());
+$parser->addArgument('--forceRest', action: ArgumentParser::ACTION_STORE_TRUE);
 $parser->addArgument('metadataFile');
 $args   = $parser->parseArgs();
 
@@ -74,8 +75,9 @@ if (!file_exists($args->metadataFile)) {
 $log->info("----------------------------------------");
 $log->info("Reading ontology");
 $log->info("----------------------------------------");
-$repo     = Repo::factoryFromUrl($args->repositoryUrl);
-$ontology = Ontology::factoryRest($args->repositoryUrl, $args->tmpDir . '/ontology.cache', 36000);
+
+list($repo, $ontology) = InitUtil::getRepoOntology($args->repositoryUrl, $args->tmpDir . '/ontology.cache', 36000, $args->forceRest);
+$log->info("Initialized with a " . ($repo instanceof RepoDb ? 'direct database connection' : 'REST connection'));
 
 try {
     $log->info("----------------------------------------");

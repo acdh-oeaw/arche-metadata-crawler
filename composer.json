@@ -11,13 +11,14 @@
         }
     ],
     "require": {
-        "php": "^8.1",
+        "php": "^8.3",
         "zozlak/argparse": "^1.0",
         "acdh-oeaw/arche-assets": "^3.9.4",
+        "acdh-oeaw/arche-lib": "^7.7",
         "acdh-oeaw/arche-lib-schema": "^7",
         "acdh-oeaw/arche-lib-ingest": "^4 | ^5",
-        "phpoffice/phpspreadsheet": "^1.29",
-        "acdh-oeaw/arche-doorkeeper": "^6.12",
+        "phpoffice/phpspreadsheet": "^5",
+        "acdh-oeaw/arche-doorkeeper": "^6.16",
         "zozlak/logging": "^1.0",
         "zozlak/guzzle-proxy-client": "^1.0",
         "acdh-oeaw/uri-normalizer": "^4"

@@ -62,76 +62,31 @@ class MetadataChecker {
 
     const URI_NORMALIZER_TTL = 'P3D';
 
-    private Ontology $ontology;
-    private Schema $schema;
-    private LoggerInterface | null $log;
-
-    /**
-     * 
-     * @var array<string, UriNormalizer>
-     * @phpstan-ignore property.onlyWritten
-     */
-    private array $normalizers;
-
-    /**
-     * 
-     * @var array<string, array<string>>
-     * @phpstan-ignore property.onlyWritten
-     */
-    private array $checkRanges;
-
-    /**
-     * 
-     * @var array<string, array<string, string>>
-     * @phpstan-ignore property.onlyWritten
-     */
-    private array $vocabularies;
+    private string $cacheDir;
+    private UriNormalizerResolveConfig $resolveCfg;
     private DatasetInterface $meta;
 
-    public function __construct(Ontology $ontology, Schema $schema,
-                                LoggerInterface | null $log = null,
-                                ?UriNormalizerResolveConfig $resolveCfg = null) {
-        $this->ontology = $ontology;
-        $this->schema   = $schema;
-        $this->log      = $log;
+    public function __construct(private Ontology $ontology,
+                                private Schema $schema,
+                                private LoggerInterface | null $log = null,
+                                UriNormalizerResolveConfig | null $resolveCfg = null,
+                                string $cacheDir = '') {
+        $this->cacheDir = !empty($cacheDir) ? $cacheDir : sys_get_temp_dir();
 
-        $this->checkRanges = [];
-        foreach ($this->schema->checkRanges ?? [] as $range => $nmsps) {
-            $this->checkRanges[$range] = array_map(fn($x) => (string) $x, iterator_to_array($nmsps));
-        }
-
-        $client            = ProxyClient::factory();
-        $cache             = new UriNormalizerCache();
-        $resolveCfg        ??= new UriNormalizerResolveConfig(3, 2, UriNormalizerResolveConfig::SCALE_POWER, ttl: self::URI_NORMALIZER_TTL);
-        $this->normalizers = [
-            '' => new UriNormalizer(cache: $cache, retryCfg: $resolveCfg),
-        ];
-        /** @phpstan-ignore property.notFound */
-        foreach ($schema->checkRanges as $class => $ranges) {
-            $rules                     = UriNormRules::getRules(array_map(fn($x) => (string) $x, iterator_to_array($ranges)));
-            $this->normalizers[$class] = new UriNormalizer($rules, '', $client, $cache, retryCfg: $resolveCfg);
-        }
-
-        foreach ($this->ontology->getProperties() as $propDesc) {
-            if (!empty($propDesc->vocabs)) {
-                $tmp = [];
-                /** @phpstan-ignore property.private */
-                foreach ($propDesc->vocabularyValues as $concept) {
-                    foreach ($concept->concept as $id) {
-                        $tmp[$id] = $concept->uri;
-                    }
-                }
-                $this->vocabularies[$propDesc->uri] = $tmp;
-            }
-        }
+        $resolveCfg       ??= new UriNormalizerResolveConfig(3, 2, UriNormalizerResolveConfig::SCALE_POWER, ttl: self::URI_NORMALIZER_TTL);
+        $this->resolveCfg = $resolveCfg;
     }
 
     public function check(DatasetInterface $meta, bool $reportProgress = true): bool {
+        $resolveCfg = null;
+        $cacheDir   = sys_get_temp_dir();
+
         $this->meta = $meta;
         $classTmpl  = new PT(DF::namedNode(RDF::RDF_TYPE));
         $noErrors   = true;
         $sbjs       = iterator_to_array($this->meta->listSubjects());
         $N          = count($sbjs);
+        $doorkeeper = null;
         foreach ($sbjs as $n => $sbj) {
             if ($n % 10 === 0) {
                 $msg = "Check progress: $n/$N " . round(100 * $n / $N, 1) . "%";
@@ -146,8 +101,12 @@ class MetadataChecker {
             } elseif (count($sbjClasses) > 1) {
                 $errors[] = "multiple rdf:types: " . implode(', ', $sbjClasses);
             } else {
-                $tmp           = new DatasetNode($sbj);
-                $doorkeeper    = new Doorkeeper($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, $this->log);
+                $tmp = new DatasetNode($sbj);
+                if ($doorkeeper === null) {
+                    $doorkeeper = new Doorkeeper($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, $this->log, $this->resolveCfg, $this->cacheDir);
+                } else {
+                    $doorkeeper->setResource($tmp);
+                }
                 $doorkeeperErr = array_merge(
                     $doorkeeper->runTests(PreCheckAttribute::class, throwException: false),
                     $doorkeeper->runTests(CheckAttribute::class, throwException: false)
