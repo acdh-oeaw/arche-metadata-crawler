@@ -91,8 +91,9 @@ class MetadataChecker {
                 $errors[] = "multiple rdf:types: " . implode(', ', $sbjClasses);
             } else {
                 $tmp = new DatasetNode($sbj);
+                $tmp = $tmp->withDataset($sbjMeta);
                 if ($doorkeeper === null) {
-                    $doorkeeper = new Doorkeeper($tmp->withDataset($sbjMeta), $this->schema, $this->ontology, null, $this->log, $this->resolveCfg, $this->cacheDir);
+                    $doorkeeper = new Doorkeeper($tmp, $this->schema, $this->ontology, null, $this->log, $this->resolveCfg, $this->cacheDir);
                 } else {
                     $doorkeeper->setResource($tmp);
                 }
