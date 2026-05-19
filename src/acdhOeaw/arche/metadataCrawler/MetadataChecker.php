@@ -27,30 +27,19 @@
 namespace acdhOeaw\arche\metadataCrawler;
 
 use Psr\Log\LoggerInterface;
-use zozlak\ProxyClient;
 use rdfInterface\DatasetInterface;
-use rdfInterface\NamedNodeInterface;
 use quickRdf\DataFactory as DF;
-use quickRdf\Literal;
-use quickRdf\NamedNode;
 use quickRdf\DatasetNode;
 use termTemplates\QuadTemplate as QT;
 use termTemplates\PredicateTemplate as PT;
-use termTemplates\NotTemplate as NT;
-use termTemplates\AnyOfTemplate as AT;
 use acdhOeaw\arche\lib\schema\Ontology;
-use acdhOeaw\arche\lib\schema\ClassDesc;
-use acdhOeaw\arche\lib\schema\PropertyDesc;
 use acdhOeaw\arche\lib\Schema;
 use acdhOeaw\arche\doorkeeper\DoorkeeperException;
 use acdhOeaw\arche\doorkeeper\PreCheckAttribute;
 use acdhOeaw\arche\doorkeeper\CheckAttribute;
 use acdhOeaw\arche\doorkeeper\Resource as Doorkeeper;
-use acdhOeaw\uriNormalizer\UriNormalizer;
 use acdhOeaw\uriNormalizer\UriNormalizerResolveConfig;
-use acdhOeaw\uriNormalizer\UriNormalizerCache;
 use acdhOeaw\uriNormalizer\UriNormalizerException;
-use acdhOeaw\UriNormRules;
 use zozlak\RdfConstants as RDF;
 
 /**
