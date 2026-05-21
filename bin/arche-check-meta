@@ -49,6 +49,7 @@ $parser->addArgument('--repositoryUrl', default: 'https://arche.acdh.oeaw.ac.at/
 $parser->addArgument('--retryAttempts', default: 3);
 $parser->addArgument('--retryDelay', default: 2);
 $parser->addArgument('--logFile', default: 'php://stdout');
+$parser->addArgument('--noProgress', action: ArgumentParser::ACTION_STORE_TRUE);
 $parser->addArgument('--errorLog', help: 'Path to a CSV log storing metadata check errors');
 $parser->addArgument('--verbose', action: ArgumentParser::ACTION_STORE_TRUE);
 $parser->addArgument('--tmpDir', default: sys_get_temp_dir());
@@ -72,10 +73,6 @@ if (!file_exists($args->metadataFile)) {
     exit(1);
 }
 
-$log->info("----------------------------------------");
-$log->info("Reading ontology");
-$log->info("----------------------------------------");
-
 list($repo, $ontology) = InitUtil::getRepoOntology($args->repositoryUrl, $args->tmpDir . '/ontology.cache', 36000, $args->forceRest);
 $log->info("Initialized with a " . ($repo instanceof RepoDb ? 'direct database connection' : 'REST connection'));
 
@@ -91,7 +88,7 @@ try {
     $log->info("----------------------------------------");
     $retryCfg = new UriNormalizerResolveConfig($args->retryAttempts, $args->retryDelay, UriNormalizerResolveConfig::SCALE_POWER);
     $checker  = new MetadataChecker($ontology, $repo->getSchema(), $log, $retryCfg);
-    $noErrors = $checker->check($meta, false);
+    $noErrors = $checker->check($meta, !$args->noProgress);
 
     exit($noErrors ? 0 : 2);
 } catch (MetadataCrawlerException $e) {
