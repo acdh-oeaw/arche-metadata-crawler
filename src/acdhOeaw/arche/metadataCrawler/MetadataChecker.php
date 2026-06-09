@@ -67,9 +67,6 @@ class MetadataChecker {
     }
 
     public function check(DatasetInterface $meta, bool $reportProgress = true): bool {
-        $resolveCfg = null;
-        $cacheDir   = sys_get_temp_dir();
-
         $this->meta = $meta;
         $classTmpl  = new PT(DF::namedNode(RDF::RDF_TYPE));
         $noErrors   = true;

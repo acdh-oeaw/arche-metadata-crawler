@@ -88,8 +88,8 @@ try {
     $meta    = $crawler->crawl();
 
     // skip graph
-    $meta = $meta->map(fn(QuadInterface $q) => $q->withGraph(null));
-    
+    $meta->foreach(fn(QuadInterface $q) => $q->withGraph(null));
+
     $log->info("----------------------------------------");
     $log->info("Saving the output");
     $log->info("----------------------------------------");
@@ -99,7 +99,7 @@ try {
     $nmsp->add(RDF::NMSP_RDF, 'rdf');
     RdfIoUtil::serialize($meta, 'text/turtle', $args->outputFile, $nmsp);
     $log->info("Output written to " . realpath($args->outputFile));
-    
+
     $noErrors = true;
     if (!$args->noCheck) {
         if (!empty($args->errorLog)) {
