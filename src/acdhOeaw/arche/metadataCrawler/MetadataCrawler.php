@@ -110,7 +110,7 @@ class MetadataCrawler {
                 try {
                     $this->metaSecondary->add(new MetadataRdf($i->getPathname(), $this->log));
                 } catch (\Exception $e) {
-                    $this->log?->warning("Failed to parse " . $i->getPathname() . " as an RDF file");
+                    $this->log?->warning("Failed to parse " . $i->getPathname() . " as an RDF file with: " . $e->getMessage());
                 }
             }
         }
