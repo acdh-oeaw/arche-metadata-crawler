@@ -46,7 +46,6 @@ class SortedDataset implements \Iterator {
     private QuadIteratorInterface $quadIter;
 
     public function __construct(private DatasetInterface $data) {
-        echo $this->data;
         $this->rewind();
     }
 
