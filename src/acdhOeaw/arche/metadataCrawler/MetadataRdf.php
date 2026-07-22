@@ -57,7 +57,7 @@ class MetadataRdf implements IteratorAggregate {
             $this->meta->add(RdfIoUtil::parse($path, new DF()));
             $this->log?->info("Reading $path as an RDF file");
             $this->log?->info("\t" . count($this->meta) . " triples read");
-        } catch (RdfIoException $ex) {
+        } catch (RdfIoException $e) {
             $this->log?->debug("\tFailed to parse $path as an RDF file with: " . $e->getMessage());
         }
         // Commented out as it is generating triples like

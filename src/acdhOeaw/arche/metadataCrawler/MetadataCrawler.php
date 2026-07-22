@@ -29,6 +29,7 @@ namespace acdhOeaw\arche\metadataCrawler;
 use DirectoryIterator;
 use SplObjectStorage;
 use Psr\Log\LoggerInterface;
+use rdfInterface\DefaultGraphInterface;
 use quickRdf\Dataset;
 use rdfInterface\DatasetInterface;
 use rdfInterface\NamedNodeInterface;
@@ -130,7 +131,7 @@ class MetadataCrawler {
             }
             return $q;
         });
-        
+
         $this->mapVocabularies($this->metaPrimary);
         $this->mapVocabularies($this->metaSecondary);
     }
@@ -145,7 +146,9 @@ class MetadataCrawler {
         foreach ($meta as $quad) {
             /* @var $quad Quad */
             $sbj = $quad->getSubject();
-            if ($checked->offsetExists($sbj)) {
+            if (!($quad->getGraph() instanceof DefaultGraphInterface)) {
+                $this->metaSecondary->add($quad);
+            } elseif ($checked->offsetExists($sbj)) {
                 $this->metaSecondary->add($quad);
             } else {
                 if ($this->metaPrimary->any(new QT($quad->getSubject()))) {
@@ -227,9 +230,10 @@ class MetadataCrawler {
         $filenameTmpl = new PT($this->schema->fileName);
         $meta         = new Dataset();
         foreach ($this->metaPrimary->listSubjects() as $sbj) {
-            $metaTmp = $this->metaPrimary->copy(new QT($sbj));
-            $ids     = $metaTmp->listObjects($idTmpl);
-            $classes = $metaTmp->listObjects($classTmpl);
+            $metaTmp        = $this->metaPrimary->copy(new QT($sbj));
+            $ids            = $metaTmp->listObjects($idTmpl);
+            $classes        = $metaTmp->listObjects($classTmpl);
+            $matchingGraphs = array_filter($graphs, fn($x) => str_starts_with($sbj->getValue(), $x->getValue()));
 
             $addedProps = new SplObjectStorage();
             foreach ($ids as $id) {
@@ -239,7 +243,7 @@ class MetadataCrawler {
                 }
             }
             foreach ($classes as $class) {
-                foreach (array_filter($graphs, fn($x) => str_starts_with($sbj->getValue(), $x->getValue())) as $graph) {
+                foreach ($matchingGraphs as $graph) {
                     $propsToAdd = [];
                     foreach ($this->metaSecondary->getIterator(new QT($class, graph: $graph)) as $quad) {
                         if (!$addedProps->offsetExists($quad->getPredicate())) {
@@ -250,7 +254,7 @@ class MetadataCrawler {
                     array_map(fn($x) => $addedProps->offsetSet($x), $propsToAdd);
                 }
             }
-            foreach ($graphs as $graph) {
+            foreach ($matchingGraphs as $graph) {
                 foreach ($this->metaSecondary->getIterator($thingTmpl->withGraph($graph)) as $quad) {
                     if (!$addedProps->offsetExists($quad->getPredicate())) {
                         $metaTmp->add($quad->withSubject($sbj));
@@ -292,7 +296,7 @@ class MetadataCrawler {
             }
             // any other entity meta collected from metadata input
             $tmpl = new QT($obj);
-            $n = $sortedMeta->count();
+            $n    = $sortedMeta->count();
             $sortedMeta->add($this->metaPrimary->getIterator($tmpl));
             $sortedMeta->add($this->metaSecondary->getIterator($tmpl));
             if ($sortedMeta->count() > $n) {
@@ -318,11 +322,11 @@ class MetadataCrawler {
                 $sortedMeta->add($meta->getIterator(new QT($sbj, $prop)));
             }
         }
-        
+
         // finally add all subjects from the metaSecondary which point with any property to
         // a subject already existing in the soretedMeta
         $included = new SplObjectStorage();
-        foreach($sortedMeta->listSubjects() as $i) {
+        foreach ($sortedMeta->listSubjects() as $i) {
             $included->offsetSet($i);
         }
         foreach ($this->metaSecondary as $i) {
@@ -335,7 +339,7 @@ class MetadataCrawler {
             $sortedMeta->add($this->metaSecondary->getIterator(new QT($sbj)));
             $included->offsetSet($sbj);
         }
-        
+
         return $sortedMeta;
     }
 

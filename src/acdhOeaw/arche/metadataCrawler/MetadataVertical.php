@@ -34,6 +34,7 @@ use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\RowCellIterator;
 use rdfInterface\QuadInterface;
+use zozlak\RdfConstants as RDF;
 use quickRdf\DataFactory as DF;
 use quickRdf\Dataset;
 use acdhOeaw\arche\lib\schema\Ontology;
@@ -50,6 +51,7 @@ use acdhOeaw\arche\metadataCrawler\container\PropertyMapping;
  */
 class MetadataVertical implements IteratorAggregate {
 
+    const OWL_THING = 'Thing';
     use MetadataSpreadsheetTrait;
 
     private const HEADER_ROW_MAX  = 10;
@@ -58,7 +60,6 @@ class MetadataVertical implements IteratorAggregate {
     private const COLUMN_FILENAME = 'filename';
 
     private Ontology $ontology;
-
     // @phpstan-ignore property.onlyWritten
     private Schema $schema;
     private FileId $idgen;
@@ -89,7 +90,7 @@ class MetadataVertical implements IteratorAggregate {
         $this->horizontal = false;
 
         $spreadsheet = IOFactory::load($path);
-        foreach($spreadsheet->getWorksheetIterator() as $n => $sheet) {
+        foreach ($spreadsheet->getWorksheetIterator() as $n => $sheet) {
             $this->log?->info("Trying to map $path sheet $n as a vertical metadata file");
             if ($this->mapStructure($sheet, $defaultLang)) {
                 $this->log?->info("Reading $path as a vertical metadata file");
@@ -131,10 +132,18 @@ class MetadataVertical implements IteratorAggregate {
                 if (!str_starts_with($v, $nmsp)) {
                     $v = $nmsp . $v;
                 }
-                list($v, $lang) = $this->getPropertyLang($v, $defaultLang);
+                list($v, $lang, $graph) = $this->getPropertyLangGraph($v, $defaultLang);
+                if (!empty($graph)) {
+                    if ($graph === self::OWL_THING) {
+                        $graph = RDF::OWL_THING;
+                    } elseif(!str_starts_with($graph, $nmsp)) {
+                        $graph = $nmsp . $graph;
+                    }
+                    $graph = DF::namedNode($graph);
+                }
                 $property = $this->ontology->getProperty(null, $v);
                 if ($property !== null) {
-                    $propMapping[] = new PropertyMapping($property, $property->langTag ? $lang : null, column: $col);
+                    $propMapping[] = new PropertyMapping($property, $property->langTag ? $lang : null, column: $col, graph: $graph);
                 }
             }
             if (count($propMapping) > 0 && ($fileMapping[self::COLUMN_PATH] !== null || $fileMapping[self::COLUMN_DIR] !== null && $fileMapping[self::COLUMN_FILENAME] !== null)) {
@@ -180,7 +189,13 @@ class MetadataVertical implements IteratorAggregate {
                 $cell  = $sheet->getCell($desc->column . $row);
                 $value = $this->getValue($cell, $desc->propDesc, $desc->defaultLang);
                 if ($value !== null) {
-                    $this->meta->add(DF::quad($sbj, DF::namedNode($desc->propDesc->uri), $value));
+                    if ($desc->graph !== null) {
+                        $quad = DF::quad($desc->graph, DF::namedNode($desc->propDesc->uri), $value, $sbj);                        
+                    }else {
+                        $quad = DF::quad($sbj, DF::namedNode($desc->propDesc->uri), $value);
+                    }
+                    echo "$quad\n";
+                    $this->meta->add($quad);
                 }
             }
         }

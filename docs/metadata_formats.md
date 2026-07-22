@@ -238,6 +238,11 @@ Remarks:
     | foo   |             | title2@fr | description2   |
     | bar   | title       |           | desciption     |
     ```
+* To apply a given property value also to all children of described repository object,
+  use a following syntax in the column header: `propertyNameOrUri|classNameOrUri`
+  or, if you also want to specify a language tag `propertyNameOrUri@langTag|classNameOrUri`,
+  e.g. `hasLicense|Resource` or `hasMetadataCreator|Thing`.
+  * This is a spreadsheet form of the quads syntax used in the RDF metadata file - see below.
 
 ## RDF metadata file
 

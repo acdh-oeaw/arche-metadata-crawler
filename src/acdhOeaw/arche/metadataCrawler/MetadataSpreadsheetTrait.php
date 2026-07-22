@@ -49,7 +49,7 @@ use acdhOeaw\arche\metadataCrawler\container\WorksheetConfig;
  * @author zozlak
  */
 trait MetadataSpreadsheetTrait {
-
+    
     /**
      * Stores value maps for cells with list-controlled values.
      * 
@@ -134,12 +134,16 @@ trait MetadataSpreadsheetTrait {
      * 
      * @param string $value
      * @param string $defaultLang
-     * @return array<string>
+     * @return array{0: string, 1:string, 2: string|null}
      */
-    private function getPropertyLang(string $value, string $defaultLang): array {
-        $value    = explode('@', $value);
-        $value[1] ??= $defaultLang;
-        return $value;
+    private function getPropertyLangGraph(string $value, string $defaultLang): array {
+        $value = explode('|', $value);
+        $graph = count($value) > 1 ? array_pop($value) : null;
+        $value = implode('|', $value);
+        $value = explode('@', $value);
+        $lang  = count($value) > 1 ? array_pop($value) : $defaultLang;
+        $value = implode('@', $value);
+        return [$value, $lang, $graph];
     }
 
     private function mapReferenceCols(WorksheetConfig $cfg): void {

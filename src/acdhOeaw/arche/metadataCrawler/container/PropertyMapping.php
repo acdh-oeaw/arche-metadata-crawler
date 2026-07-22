@@ -26,6 +26,7 @@
 
 namespace acdhOeaw\arche\metadataCrawler\container;
 
+use rdfInterface\NamedNodeInterface;
 use acdhOeaw\arche\lib\schema\PropertyDesc;
 
 /**
@@ -38,7 +39,8 @@ class PropertyMapping {
     public function __construct(public PropertyDesc $propDesc,
                                 public ?string $defaultLang,
                                 public ?string $column = null,
-                                public ?int $row = null) {
-        ;
+                                public ?int $row = null,
+                                public ?NamedNodeInterface $graph = null) {
+        
     }
 }
