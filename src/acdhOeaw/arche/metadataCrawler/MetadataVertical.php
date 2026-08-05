@@ -194,7 +194,6 @@ class MetadataVertical implements IteratorAggregate {
                     }else {
                         $quad = DF::quad($sbj, DF::namedNode($desc->propDesc->uri), $value);
                     }
-                    echo "$quad\n";
                     $this->meta->add($quad);
                 }
             }
