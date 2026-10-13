@@ -192,7 +192,7 @@ trait MetadataSpreadsheetTrait {
             $idCol                     = $labelCol;
             $idCol                     = str_increment($idCol);
             $this->valueMaps[$mapName] = [];
-            for ($targetRow = $startRow; $targetRow < $endRow; $targetRow++) {
+            for ($targetRow = $startRow; $targetRow <= $endRow; $targetRow++) {
                 try {
                     $label = $targetSheet->getCell($labelCol . $targetRow)->getCalculatedValue();
                     if (!empty($label)) {
