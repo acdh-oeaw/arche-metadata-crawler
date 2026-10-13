@@ -28,6 +28,7 @@ namespace acdhOeaw\arche\metadataCrawler;
 
 use DirectoryIterator;
 use SplObjectStorage;
+use SplFileInfo;
 use Psr\Log\LoggerInterface;
 use rdfInterface\DefaultGraphInterface;
 use quickRdf\Dataset;
@@ -46,6 +47,7 @@ use acdhOeaw\arche\lib\schema\PropertyDesc;
 use acdhOeaw\arche\lib\Schema;
 use acdhOeaw\arche\lib\ingest\util\FileId;
 use zozlak\RdfConstants as RDF;
+use zozlak\logging\MemoryLog;
 
 /**
  * Description of DirectoryCrawler
@@ -100,13 +102,7 @@ class MetadataCrawler {
                 continue;
             }
             if (in_array(strtolower($i->getExtension()), self::SPREADSHEET_EXTENSIONS)) {
-                $entityList = new EntityListWorksheet($i->getPathname(), $this->ontology, $this->schema, $this->defaultLang, EntityListWorksheet::STRICT_REQUIRED, $this->log);
-                $n          = $this->entitiesDb->add($entityList->readEntities());
-                $n          = $n || $this->addMetaSecondary(new MetadataVertical($i->getPathname(), $this->ontology, $this->schema, $this->idPrefix, $this->defaultLang, $this->log));
-                $n          = $n || $this->addMetaSecondary(new MetadataHorizontal($i->getPathname(), $this->ontology, $this->schema, $this->idPrefix, $this->defaultLang, $this->log));
-                if (!$n) {
-                    $this->log?->warning("Failed to parse " . $i->getPathname() . " in all supported formats");
-                }
+                $this->readMetadataSpreadsheet($i);
             } elseif ($i->getFilename() !== self::FILECHECKER_FILE) {
                 try {
                     $this->metaSecondary->add(new MetadataRdf($i->getPathname(), $this->log));
@@ -134,6 +130,52 @@ class MetadataCrawler {
 
         $this->mapVocabularies($this->metaPrimary);
         $this->mapVocabularies($this->metaSecondary);
+    }
+
+    private function readMetadataSpreadsheet(SplFileInfo $file): void {
+        $logs = [
+            'vertical'      => new MemoryLog(),
+            'horizontal'    => new MemoryLog(),
+            'namedEntities' => new MemoryLog(),
+        ];
+        try {
+            $n   = $this->addMetaSecondary(new MetadataVertical($file->getPathname(), $this->ontology, $this->schema, $this->idPrefix, $this->defaultLang, $logs['vertical']));
+            $src = 'vertical';
+        } catch (MetadataCrawlerException $e) {
+            $logs['vertical']->error($e->getMessage());
+            $n = -1;
+        }
+        if ($n === 0) {
+            try {
+                $n   = $this->addMetaSecondary(new MetadataHorizontal($file->getPathname(), $this->ontology, $this->schema, $this->idPrefix, $this->defaultLang, $logs['horizontal']));
+                $src = 'horizontal';
+            } catch (MetadataCrawlerException $e) {
+                $logs['horizontal']->error($e->getMessage());
+                $n = -1;
+            }
+        }
+        if ($n === 0) {
+            try {
+                $entityList = new EntityListWorksheet($file->getPathname(), $this->ontology, $this->schema, $this->defaultLang, EntityListWorksheet::STRICT_REQUIRED, $logs['namedEntities']);
+                $n          = $this->entitiesDb->add($entityList->readEntities());
+                $src        = 'namedEntities';
+            } catch (MetadataCrawlerException $e) {
+                $logs['namedEntities']->error($e->getMessage());
+                $n = -1;
+            }
+        }
+        if ($n > 0) {
+            foreach ($logs[$src] as $msg) {
+                $this->log?->log($msg->level, $msg->message, $msg->context);
+            }
+        } else {
+            $this->log?->error("Failed to parse " . $file->getPathname() . " in all supported formats (details below)");
+            foreach ($logs as $log) {
+                foreach ($log as $msg) {
+                    $this->log?->log($msg->level, "\t" . $msg->message, $msg->context);
+                }
+            }
+        }
     }
 
     /**
@@ -211,6 +253,10 @@ class MetadataCrawler {
             if (!empty($i->hasCategory)) {
                 /** @phpstan-ignore property.notFound */
                 $this->metaPrimary->add(DF::quad($id, $this->schema->category, DF::namedNode($i->hasCategory)));
+            }
+            foreach($i->xmlSchemas ?? [] as $schema) {
+                /** @phpstan-ignore property.notFound */
+                $this->metaPrimary->add(DF::quad($id, $this->schema->dataSchema, DF::literal($schema)));
             }
             $n++;
         }

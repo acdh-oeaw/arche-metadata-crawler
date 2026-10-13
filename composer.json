@@ -19,7 +19,7 @@
         "acdh-oeaw/arche-lib-ingest": "^4 | ^5",
         "phpoffice/phpspreadsheet": "^5",
         "acdh-oeaw/arche-doorkeeper": "^6.16",
-        "zozlak/logging": "^1.0",
+        "zozlak/logging": "^1.3",
         "zozlak/guzzle-proxy-client": "^1.0",
         "acdh-oeaw/uri-normalizer": "^4"
     },
