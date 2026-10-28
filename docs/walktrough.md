@@ -34,7 +34,7 @@ We will use repo-ingestion@acdh-cluster as the runtime environment
    2023-11-16 11:16:18.737315	info	----------------------------------------
    2023-11-16 11:16:18.737452	info	Reading and merging metadata
    2023-11-16 11:16:18.737467	info	----------------------------------------
-   2023-11-16 11:16:18.739269	info	Impoting filechecker output file /ARCHE/staging/testWollmilchsau/metadata/input/fileList.json
+   2023-11-16 11:16:18.739269	info	Importing filechecker output file /ARCHE/staging/testWollmilchsau/metadata/input/fileList.json
    2023-11-16 11:16:18.743590	info		Data on 20 files and directories imported
    2023-11-16 11:16:18.748418	info	----------------------------------------
    2023-11-16 11:16:18.748455	info	Checking merged metadata

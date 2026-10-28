@@ -205,7 +205,7 @@ class MetadataCrawler {
     }
 
     private function parseFilecheckerOutput(string $path, string $basePath): NamedNode {
-        $this->log?->info("Impoting filechecker output file $path");
+        $this->log?->info("Importing filechecker output file $path");
         if (!empty($basePath) && substr($basePath, -1) !== '/') {
             $basePath .= '/';
         }
