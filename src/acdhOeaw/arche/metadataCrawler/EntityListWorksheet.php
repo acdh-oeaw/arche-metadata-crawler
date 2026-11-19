@@ -206,8 +206,8 @@ class EntityListWorksheet {
         $uniqueLabels   = [];
         $entities       = [];
         for ($row = $cfg->headerRow + 1; $row <= $highestDataRow; $row++) {
-            $label = (string) $sheet->getCell($labelCol . $row)->getCalculatedValue();
-            $id    = (string) $sheet->getCell($idCol . $row)->getCalculatedValue();
+            $label = trim((string) $sheet->getCell($labelCol . $row)->getCalculatedValue());
+            $id    = trim((string) $sheet->getCell($idCol . $row)->getCalculatedValue());
             if (!empty($label) && $label !== $prevLabel && $id !== $prevId) {
                 if ($entity !== null && $this->checkEntity($entity, $cfg->propertyMap)) {
                     $entities[$curLabel] = $entity;
